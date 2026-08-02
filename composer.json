@@ -19,8 +19,8 @@
     "support": {
         "docs": "https://forumfortress.com/docs/install/flarum/",
         "forum": "https://forumfortress.com/#support",
-        "issues": "https://github.com/forumfortress/flarum/issues",
-        "source": "https://github.com/forumfortress/flarum"
+        "issues": "https://github.com/forum-fortress/flarum/issues",
+        "source": "https://github.com/forum-fortress/flarum"
     },
     "require": {
         "php": "^8.3",
