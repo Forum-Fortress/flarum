@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.0.3 - 2026-08-05
+
+- Updated portal verification warning copy to avoid assuming SMTP is missing when delivery is otherwise configured.
+- Documented recommended scheduler setup for production cron execution in the extension README.
+
 ## 1.0.2 - 2026-08-05
 
 - Required valid registration email for plugin Register Site flow, with admin email fallback when configuration is blank.

@@ -2343,7 +2343,7 @@
     {% elif flash == "upgrade_activated" %}
       <div class="flash">Plan upgraded successfully.</div>
     {% elif flash == "verification_unavailable" %}
-      <div class="flash flash-error">Verification email could not be sent because SMTP is not configured yet.</div>
+      <div class="flash flash-error">Verification email could not be sent. Verify SMTP configuration in the admin portal.</div>
     {% elif flash == "registered" %}
       <div class="flash">Registration complete. This site is now linked to your email account.</div>
     {% elif flash == "attack_mode_enabled" %}

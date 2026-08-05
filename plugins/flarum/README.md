@@ -11,6 +11,7 @@ Forum Fortress adds cloud-based spam and abuse protection to Flarum 2. It checks
 - Native Flarum Approval and moderation synchronization.
 - Attack mode, connection test, usage status, portal access, and manual sync controls in Flarum Admin.
 - Scheduled heartbeat and moderation synchronization through Flarum's scheduler.
+- Recommended on production: run `php flarum schedule:run` every minute via cron to keep moderation sync and site checks fresh.
 
 ## Requirements
 

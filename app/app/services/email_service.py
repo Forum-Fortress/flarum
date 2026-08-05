@@ -37,7 +37,15 @@ def send_email(
     html_body: str | None = None,
 ) -> bool:
     email_settings = settings.email
-    if not email_settings.enabled or not email_settings.smtp_host:
+    is_enabled = bool(getattr(email_settings, "enabled", True))
+    smtp_host = str(getattr(email_settings, "smtp_host", "") or "").strip()
+    try:
+        smtp_port = int(getattr(email_settings, "smtp_port", 587))
+    except (TypeError, ValueError):
+        LOGGER.exception("smtp_port_invalid value=%s", getattr(email_settings, "smtp_port", None))
+        return False
+
+    if not is_enabled or not smtp_host:
         return False
     from_email = _resolve_from_email(
         settings,
@@ -60,9 +68,9 @@ def send_email(
         message.add_alternative(html_body, subtype="html")
 
     if email_settings.smtp_use_ssl:
-        smtp = smtplib.SMTP_SSL(email_settings.smtp_host, email_settings.smtp_port, timeout=15)
+        smtp = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=15)
     else:
-        smtp = smtplib.SMTP(email_settings.smtp_host, email_settings.smtp_port, timeout=15)
+        smtp = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
 
     try:
         try:
@@ -74,12 +82,15 @@ def send_email(
                 smtp.login(email_settings.smtp_username, email_settings.smtp_password or "")
             smtp.send_message(message)
         except smtplib.SMTPException:
-            LOGGER.exception("smtp_send_failed to=%s host=%s", to_email, email_settings.smtp_host)
+            LOGGER.exception("smtp_send_failed to=%s host=%s", to_email, smtp_host)
             return False
         finally:
             smtp.quit()
-    except OSError:
-        LOGGER.exception("smtp_connect_failed to=%s host=%s", to_email, email_settings.smtp_host)
+    except (OSError, RuntimeError):
+        LOGGER.exception("smtp_connect_failed to=%s host=%s", to_email, smtp_host)
+        return False
+    except Exception:
+        LOGGER.exception("smtp_send_failed_unexpected to=%s host=%s", to_email, smtp_host)
         return False
 
     return True
