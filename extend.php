@@ -24,7 +24,7 @@ return [
         ->default('forumfortress.preferred_endpoint', '')
         ->default('forumfortress.endpoint_state', '{}')
         ->default('forumfortress.dashboard_status', '{}')
-        ->default('forumfortress.registration_email', 'admin@local.int')
+        ->default('forumfortress.registration_email', '')
         ->default('forumfortress.block_reject_action', 'reject')
         ->default('forumfortress.timeout', '5')
         ->default('forumfortress.fail_open', '1')
