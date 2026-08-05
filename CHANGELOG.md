@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.0.1 - 2026-08-05
+
+- Made site registration email optional and left it blank by default.
+- Kept Register Site behavior aligned with automatic bootstrap and non-empty email-only validation for optional account attachment.
+
 ## 1.0.0 - 2026-08-02
 
 - Initial public release for Flarum 2.
