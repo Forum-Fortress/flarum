@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '0.2.0';
+    public const PLUGIN_VERSION = '1.0.4';
     private const CATALOG_TTL = 3600;
     private const FAILED_ENDPOINT_COOLDOWN = 300;
 
@@ -155,9 +155,24 @@ final class ForumFortressClient
     public function registerSite(string $email): array
     {
         $this->bootstrapIfNeeded();
-        $result = $this->request('POST', $this->controlBaseUrl().'/v1/site/register', array_merge($this->commonPayload(), [
+        $payload = array_merge($this->commonPayload(), [
             'email' => trim($email),
-        ]));
+        ]);
+        try {
+            $result = $this->request('POST', $this->controlBaseUrl().'/v1/site/register', $payload);
+        } catch (\Throwable $error) {
+            if (str_contains(strtolower($error->getMessage()), 'node_mismatch')) {
+                $this->settings->set('forumfortress.api_key', '');
+                $this->settings->set('forumfortress.site_id', '');
+                $this->bootstrapIfNeeded(true);
+                $payload = array_merge($this->commonPayload(), [
+                    'email' => trim($email),
+                ]);
+                $result = $this->request('POST', $this->controlBaseUrl().'/v1/site/register', $payload);
+            } else {
+                throw $error;
+            }
+        }
         $this->persistIdentity($result);
         return $result;
     }

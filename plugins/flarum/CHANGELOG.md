@@ -2,6 +2,12 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.0.4 - 2026-08-05
+
+- Made Register Site registration require `forumfortress.registration_email` explicitly and removed implicit admin email fallback.
+- Improved Register Site reliability by automatically recovering from stale bootstrap credentials before retrying registration.
+- Fixed portal flash banner contrast for dark mode so verification and registration notices remain readable.
+
 ## 1.0.3 - 2026-08-05
 
 - Updated portal verification warning copy to avoid assuming SMTP is missing when delivery is otherwise configured.

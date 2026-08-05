@@ -112,16 +112,8 @@ final class AdminController implements RequestHandlerInterface
         $body = (array) $request->getParsedBody();
         $email = trim((string) ($body['email'] ?? $this->settings->get('forumfortress.registration_email', '')));
 
-        if ($email === '') {
-            $actor = RequestUtil::getActor($request);
-            $actorEmail = method_exists($actor, 'getEmail') ? trim((string) $actor->getEmail()) : trim((string) $actor->email);
-            if ($actorEmail !== '') {
-                $email = $actorEmail;
-            }
-        }
-
         if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new \InvalidArgumentException('A valid registration email is required to register via this flow. Set forumfortress.registration_email or use your admin email.');
+            throw new \InvalidArgumentException('A valid registration email is required to register via this flow. Set forumfortress.registration_email before registering.');
         }
 
         return $this->client->registerSite($email);
