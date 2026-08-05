@@ -112,7 +112,7 @@ final class AdminController implements RequestHandlerInterface
         $body = (array) $request->getParsedBody();
         $email = trim((string) ($body['email'] ?? $this->settings->get('forumfortress.registration_email', '')));
 
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new \InvalidArgumentException('A valid registration email is required.');
         }
 
