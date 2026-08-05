@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.0.3 - 2026-08-05
+
+- Updated portal verification warning text to avoid incorrectly blaming SMTP configuration when delivery is blocked by other factors.
+- Clarified production scheduling guidance in documentation.
+
 ## 1.0.2 - 2026-08-05
 
 - Made Register Site button flows require a valid email and automatically use the admin account email if no configured registration email is present.
