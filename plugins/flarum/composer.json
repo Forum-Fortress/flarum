@@ -1,0 +1,54 @@
+{
+    "name": "forumfortress/flarum",
+    "description": "Forum Fortress anti-spam protection for Flarum 2.",
+    "type": "flarum-extension",
+    "keywords": [
+        "flarum",
+        "anti-spam",
+        "moderation",
+        "security"
+    ],
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "Forum Fortress",
+            "homepage": "https://forumfortress.com/"
+        }
+    ],
+    "homepage": "https://forumfortress.com/",
+    "support": {
+        "docs": "https://forumfortress.com/docs/install/flarum/",
+        "forum": "https://forumfortress.com/#support",
+        "issues": "https://github.com/forum-fortress/flarum/issues",
+        "source": "https://github.com/forum-fortress/flarum"
+    },
+    "require": {
+        "php": "^8.3",
+        "flarum/core": "^2.0.0-rc.5",
+        "flarum/approval": "^2.0.0-rc.5",
+        "flarum/flags": "^2.0.0-rc.5",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ForumFortress\\Flarum\\": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "1.x-dev"
+        },
+        "flarum-extension": {
+            "title": "Forum Fortress",
+            "category": "security",
+            "optional-dependencies": [
+                "flarum/suspend"
+            ],
+            "icon": {
+                "name": "fas fa-shield-halved",
+                "backgroundColor": "#173f35",
+                "color": "#d9f7e8"
+            }
+        }
+    }
+}
