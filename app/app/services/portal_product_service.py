@@ -20,7 +20,7 @@ _PLATFORMS = {
     "invision": {"label": "Invision Community", "status": "Available"},
     "smf": {"label": "SMF", "status": "Beta"},
     "mybb": {"label": "MyBB", "status": "Beta"},
-    "flarum": {"label": "Flarum 2", "status": "Available", "version": "1.0.1"},
+    "flarum": {"label": "Flarum 2", "status": "Available", "version": "1.0.3"},
 }
 PLATFORMS = MappingProxyType({key: MappingProxyType(value) for key, value in _PLATFORMS.items()})
 
