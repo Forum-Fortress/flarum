@@ -413,6 +413,38 @@
       margin-bottom: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
       background: var(--warning-soft); color: var(--warn);
     }
+    .banner form { display: inline-flex; margin-top: 12px; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .banner label { color: inherit; }
+    .banner input {
+      min-height: 42px;
+      min-width: 240px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--paper-strong);
+      color: var(--ink) !important;
+      padding: 0 12px;
+    }
+    .banner button.alt {
+      background: var(--paper-strong);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+    .banner input::placeholder { color: color-mix(in srgb, var(--ink) 60%, transparent); }
+    .banner form .ff-login-link-button, .banner form .btn { color: inherit; }
+    html[data-ff-theme='light'] .banner {
+      color: var(--ink);
+    }
+    html[data-ff-theme='light'] .banner input,
+    html[data-ff-theme='light'] .banner button.alt,
+    html[data-ff-theme='dark'] .banner input,
+    html[data-ff-theme='dark'] .banner button.alt {
+      background: var(--surface);
+      color: var(--ink);
+    }
+    html[data-ff-theme='dark'] .banner input,
+    html[data-ff-theme='dark'] .banner button {
+      color: var(--ink);
+    }
     .flash { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; background: rgba(31,95,136,.10); color: var(--accent-strong); border: 1px solid rgba(31,95,136,.16); }
     .flash.flash-error { background: #e9f4fb; color: #12344a; border: 1px solid #9fc2d9; }
     .subtle { color: var(--muted); font-size: 14px; line-height: 1.5; }

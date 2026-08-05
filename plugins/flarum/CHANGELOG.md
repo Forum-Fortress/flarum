@@ -2,6 +2,12 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.0.2 - 2026-08-05
+
+- Required valid registration email for plugin Register Site flow, with admin email fallback when configuration is blank.
+- Fixed portal anonymous registration banner contrast in dark mode.
+- Hardened SMTP verification sender fallback when `from_email` is left blank.
+
 ## 1.0.1 - 2026-08-05
 
 - Made site registration email optional and left it blank by default.
