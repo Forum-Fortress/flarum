@@ -80,21 +80,17 @@ final class ForumFortressClient
         if ($force && str_starts_with($apiKey, 'ff_ob_')) {
             unset($payload['api_key']);
         }
-                if (trim((string) ($result['api_key'] ?? '')) === '') {
-                    throw new \UnexpectedValueException(
-                        'Forum Fortress recognizes this site but did not return an API key. Open its plugin re-registration window, then retry synchronization.'
-                    );
-                }
-
         $lastError = null;
         $bases = array_values(array_unique(array_merge([$this->controlBaseUrl()], $this->bootstrapCandidates())));
         foreach ($bases as $base) {
             try {
                 $result = $this->request('POST', $base.'/v1/site/bootstrap', $payload);
-                $this->persistIdentity($result);
-                if ($error instanceof \UnexpectedValueException) {
-                    break;
+                if (trim((string) ($result['api_key'] ?? '')) === '') {
+                    throw new \UnexpectedValueException(
+                        'Forum Fortress recognizes this site but did not return an API key. Open its plugin re-registration window, then retry synchronization.'
+                    );
                 }
+                $this->persistIdentity($result);
                 $this->recordEndpointResult($base, true, 0);
                 return $result;
             } catch (\Throwable $error) {
