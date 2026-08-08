@@ -8,9 +8,13 @@ use ForumFortress\Flarum\Console\SyncCommand;
 use ForumFortress\Flarum\Listener;
 use Illuminate\Console\Scheduling\Event as ScheduleEvent;
 
+$adminJavaScript = str_starts_with(Flarum\Foundation\Application::VERSION, '1.')
+    ? __DIR__.'/js/dist/admin.v1.js'
+    : __DIR__.'/js/dist/admin.js';
+
 return [
     (new Extend\Frontend('admin'))
-        ->js(__DIR__.'/js/dist/admin.js')
+        ->js($adminJavaScript)
         ->css(__DIR__.'/less/admin.less'),
 
     new Extend\Locales(__DIR__.'/locale'),

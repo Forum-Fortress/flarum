@@ -1,6 +1,6 @@
-# Forum Fortress for Flarum 2
+# Forum Fortress for Flarum 1.8 and 2
 
-Forum Fortress adds cloud-based spam and abuse protection to Flarum 2. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
+Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8 and 2. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
 ## Features
 
@@ -14,19 +14,27 @@ Forum Fortress adds cloud-based spam and abuse protection to Flarum 2. It checks
 
 ## Requirements
 
-- Flarum `2.0.0-rc.5` or newer within the Flarum 2 series.
-- PHP 8.3 or newer.
+- Flarum `1.8.x` or `2.x`.
+- PHP 8.0 or newer (Flarum 2 itself requires the newer PHP version supported by that release).
 - Outbound HTTPS access to Forum Fortress services.
+
+The package includes separate Flarum 1 and Flarum 2 admin bundles generated from
+the same TypeScript source. The appropriate bundle is selected automatically.
 
 ## Install
 
 From the Flarum root:
 
 ```bash
-composer require forumfortress/flarum:"^1.0"
+composer require forumfortress/flarum:"^1.1"
 php flarum extension:enable forumfortress-flarum
 php flarum cache:clear
 ```
+
+The supported Flarum and Guzzle packages are already present in standard Flarum
+1.8 and 2 installations. This scoped command installs Forum Fortress without
+updating their locked versions. Do not add Composer's `-W` or
+`--with-all-dependencies` option.
 
 Open **Administration > Extensions > Forum Fortress**, then select **Refresh** or **Connection test**. The extension bootstraps automatically when it is first used.
 
@@ -34,7 +42,7 @@ For scheduler setup, configuration, updates, removal, and troubleshooting, use t
 
 ## Documentation and support
 
-- [Flarum 2 installation and configuration](https://forumfortress.com/docs/install/flarum/)
+- [Flarum 1.8 and 2 installation and configuration](https://forumfortress.com/docs/install/flarum/)
 - [Forum Fortress documentation](https://forumfortress.com/docs/)
 - [Support](https://forumfortress.com/#support)
 - [Service status](https://status.forumfortress.com/)
