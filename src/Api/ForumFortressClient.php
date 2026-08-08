@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '0.2.0';
+    public const PLUGIN_VERSION = '1.1.0';
     private const CATALOG_TTL = 3600;
     private const FAILED_ENDPOINT_COOLDOWN = 300;
 

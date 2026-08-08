@@ -2,22 +2,14 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
-## 1.0.4 - 2026-08-05
+## 1.1.0 - 2026-08-08
 
-- Required explicitly set `forumfortress.registration_email` for plugin Register Site actions while keeping portal registration optional.
-- Improved Register Site flow to recover from stale bootstrap credentials and retry registration.
-- Fixed portal dark-mode banner/notice contrast for email registration, verification, and warning states.
-
-## 1.0.3 - 2026-08-05
-
-- Updated portal verification warning text to avoid incorrectly blaming SMTP configuration when delivery is blocked by other factors.
-- Clarified production scheduling guidance in documentation.
-
-## 1.0.2 - 2026-08-05
-
-- Made Register Site button flows require a valid email and automatically use the admin account email if no configured registration email is present.
-- Fixed dark-mode contrast for the portal email registration banner in anonymous sessions.
-- Improved verification email sender fallback logic so verification messages work when no explicit SMTP from_email is configured.
+- Added support for Flarum 1.8 while retaining Flarum 2 support in one Composer package.
+- Added version-specific Flarum 1 and Flarum 2 admin bundles selected automatically at runtime.
+- Restored the translated administration dashboard and shield icon on both supported Flarum series.
+- Restored portal login as a direct browser link so popup creation and authentication work on both versions.
+- Confirmed clean automatic bootstrap, authenticated control access, and moderation traffic against the production service on both Flarum 1.8 and 2.
+- Kept existing Flarum and framework dependency versions untouched during installation.
 
 ## 1.0.1 - 2026-08-05
 

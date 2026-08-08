@@ -5,6 +5,7 @@
 /js/package.json export-ignore
 /js/tsconfig.json export-ignore
 /js/webpack.config.js export-ignore
+/js/webpack.v1.config.js export-ignore
 /js/dist/*.map export-ignore
 /server-compatibility export-ignore
 *.orig export-ignore

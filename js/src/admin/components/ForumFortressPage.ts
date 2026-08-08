@@ -1,5 +1,4 @@
 import ExtensionPage, { ExtensionPageAttrs } from 'flarum/admin/components/ExtensionPage';
-import m from 'mithril';
 import type Mithril from 'mithril';
 import ForumFortressControls from './ForumFortressControls';
 

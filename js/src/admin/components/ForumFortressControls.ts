@@ -1,9 +1,7 @@
 import app from 'flarum/admin/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
-import Icon from 'flarum/common/components/Icon';
 import extractText from 'flarum/common/utils/extractText';
-import m from 'mithril';
 import type Mithril from 'mithril';
 
 type SiteStatus = Record<string, unknown> & {
@@ -147,7 +145,7 @@ export default class ForumFortressControls extends Component {
         target: '_blank',
         rel: 'noopener',
       },
-      [m(Icon, { name: 'fas fa-external-link-alt' }), m('span', this.trans('portal_login'))]
+      [m('i.fas.fa-external-link-alt', { 'aria-hidden': 'true' }), m('span', this.trans('portal_login'))]
     );
   }
 

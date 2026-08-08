@@ -1,1 +1,1 @@
-export { default as extend } from './extend';
+import './extend';
