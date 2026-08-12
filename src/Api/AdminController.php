@@ -91,7 +91,9 @@ final class AdminController implements RequestHandlerInterface
         $status = $this->client->setAttackMode($enabled);
         $cached = json_decode((string) $this->settings->get('forumfortress.dashboard_status', '{}'), true);
         $dashboard = is_array($cached) ? $cached : [];
-        $dashboard['status'] = array_merge((array) ($dashboard['status'] ?? []), $status, ['attack_mode_active' => $enabled]);
+        $dashboard['status'] = array_merge((array) ($dashboard['status'] ?? []), $status, [
+            'attack_mode_active' => (bool) $status['attack_mode_active'],
+        ]);
         $dashboard['endpoints'] = $this->client->endpointStateSummary();
         $this->cacheDashboardStatus($dashboard);
 

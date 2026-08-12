@@ -84,7 +84,10 @@ export default class ForumFortressControls extends Component {
       const current = this.status?.status ?? {};
       this.status = {
         ...(this.status ?? {}),
-        status: { ...current, attack_mode_active: path === '/forumfortress/attack-mode' },
+        status: {
+          ...current,
+          attack_mode_active: Boolean(result.attack_mode_active),
+        },
       };
     }
 
