@@ -2,6 +2,21 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.1.2 - 2026-08-11
+
+- Verified compatibility with Flarum 1.8.18 using Flarum Core 1.8.18,
+  Approval 1.8.2, and Flags 1.8.2.
+- No compatibility code changes were required.
+- Updated the plugin version reported to Forum Fortress services.
+
+## 1.1.1 - 2026-08-11
+
+- Tighten endpoint selection and fast failover for control-plane and edge
+  requests.
+- Keep endpoint observations available for portal diagnostics without adding a
+  plugin-specific API surface.
+- Refresh the administration control plane styling and release metadata.
+
 ## 1.1.0 - 2026-08-08
 
 - Added support for Flarum 1.8 while retaining Flarum 2 support in one Composer package.

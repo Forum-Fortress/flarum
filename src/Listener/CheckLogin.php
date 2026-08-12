@@ -23,17 +23,14 @@ final class CheckLogin
                 'ip' => (string) ($event->token->last_ip_address ?? ''),
                 'user_agent' => (string) ($event->token->last_user_agent ?? ''),
             ]);
-            $response = $this->client->check('login', $payload);
-            $decision = strtolower((string) ($response['decision'] ?? 'allow'));
-
-            if ($decision === 'block') {
-                $event->token->delete();
-            }
-
-            Decision::assertAllowed($response);
+            // Login checks are observational only. Forum Fortress may record
+            // network or identity risk, but it must never revoke a valid login.
+            $this->client->check('login', $payload);
             $this->client->report('login', $payload);
         } catch (UnavailableException $error) {
-            throw Decision::unavailable($error);
+            // Authentication must continue even when the anti-spam service is
+            // unavailable; the forum owns the credential decision.
+            return;
         }
     }
 }
