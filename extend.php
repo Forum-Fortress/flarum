@@ -39,7 +39,6 @@ return [
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckRegistration::class)
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckProfile::class)
         ->listen(Flarum\User\Event\LoggedIn::class, Listener\CheckLogin::class)
-        ->listen(Flarum\User\Event\Activated::class, Listener\ReportActivation::class)
         ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class)
         ->listen(Flarum\Post\Event\Hidden::class, Listener\ReportPostHidden::class)
         ->listen(Flarum\Post\Event\Restored::class, Listener\ReportPostRestored::class)
