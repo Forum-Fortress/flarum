@@ -13,6 +13,16 @@ final class ReportActivation
 
     public function handle(Activated $event): void
     {
-        $this->client->report('register', $this->client->userPayload($event->user, ['remote_user_id' => (string) $event->user->id]));
+        // Registration was already checked during Saving. Activation is a
+        // successful lifecycle notification, not independent spam evidence.
+        $this->client->report('ham', array_merge(
+            $this->client->userPayload($event->user),
+            [
+                'payload' => [
+                    'action' => 'activate',
+                    'remote_user_id' => (string) $event->user->id,
+                ],
+            ],
+        ));
     }
 }

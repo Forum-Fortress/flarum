@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.1.3 - 2026-08-13
+
+- Fixed account activation reporting so email verification is not emitted as
+  a second registration event after the registration check.
+
 ## 1.1.2 - 2026-08-11
 
 - Verified compatibility with Flarum 1.8.18 using Flarum Core 1.8.18,
