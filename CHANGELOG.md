@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.1.4 - 2026-08-13
+
+- Removed activation/email-verification reporting. Registration is reported
+  once after the account is created, matching the other integrations.
+
 ## 1.1.3 - 2026-08-13
 
 - Removed activation/email-verification reporting. Registration is reported
