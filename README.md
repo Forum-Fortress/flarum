@@ -26,7 +26,7 @@ the same TypeScript source. The appropriate bundle is selected automatically.
 From the Flarum root:
 
 ```bash
-composer require forumfortress/flarum:"^1.1"
+composer require forumfortress/flarum:"^1.2"
 php flarum extension:enable forumfortress-flarum
 php flarum cache:clear
 ```
