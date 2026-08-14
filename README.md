@@ -1,6 +1,6 @@
-# Forum Fortress for Flarum 1.8 and 2
+# Forum Fortress for Flarum 1.8.x and 2.x
 
-Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8 and 2. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
+Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
 ## Features
 
@@ -42,7 +42,7 @@ For scheduler setup, configuration, updates, removal, and troubleshooting, use t
 
 ## Documentation and support
 
-- [Flarum 1.8 and 2 installation and configuration](https://forumfortress.com/docs/install/flarum/)
+- [Flarum 1.8.x and 2.x installation and configuration](https://forumfortress.com/docs/install/flarum/)
 - [Forum Fortress documentation](https://forumfortress.com/docs/)
 - [Support](https://forumfortress.com/#support)
 - [Service status](https://status.forumfortress.com/)
