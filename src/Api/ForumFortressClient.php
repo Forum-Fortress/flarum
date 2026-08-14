@@ -19,7 +19,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.1.6';
+    public const PLUGIN_VERSION = '1.2.0';
     private const CATALOG_TTL = 3600;
     private const HEALTH_TTL = 3600;
     private const DEGRADED_HEALTH_TTL = 300;
