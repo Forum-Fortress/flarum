@@ -1,6 +1,6 @@
 {
     "name": "forumfortress/flarum",
-    "description": "Forum Fortress anti-spam protection for Flarum 1.8 and 2.",
+    "description": "Forum Fortress anti-spam protection for Flarum 1.8.x and 2.x.",
     "type": "flarum-extension",
     "keywords": [
         "flarum",

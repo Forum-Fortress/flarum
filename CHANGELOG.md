@@ -2,6 +2,14 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.1.5 - 2026-08-14
+
+- Verified compatibility with Flarum 1.8.19 using Flarum Core 1.8.19,
+  Approval 1.8.2, and Flags 1.8.2.
+- Confirmed clean activation, migrations, public and administration rendering,
+  API controls, scheduled commands, endpoint synchronization, and enforcement
+  checks on Flarum 1.8.19.
+
 ## 1.1.4 - 2026-08-13
 
 - Removed activation/email-verification reporting. Registration is reported
