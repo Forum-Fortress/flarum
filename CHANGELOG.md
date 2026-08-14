@@ -2,6 +2,12 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.1.6 - 2026-08-14
+
+- Include the compiled Flarum 1.8 and 2 administration bundles in Composer
+  distribution archives so Extension Manager installations can load the admin
+  interface without a local Node or Composer build step.
+
 ## 1.1.5 - 2026-08-14
 
 - Verified compatibility with Flarum 1.8.19 using Flarum Core 1.8.19,
