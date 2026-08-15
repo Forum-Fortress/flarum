@@ -103,13 +103,6 @@ app.initializers.add(extensionId, () => {
     type: "boolean",
   });
   registrar.registerSetting({
-    setting: "forumfortress.send_ham",
-    label: app.translator.trans(
-      "forumfortress-flarum.admin.settings.send_ham_label"
-    ),
-    type: "boolean",
-  });
-  registrar.registerSetting({
     setting: "forumfortress.block_reject_action",
     label: app.translator.trans(
       "forumfortress-flarum.admin.settings.block_reject_action_label"

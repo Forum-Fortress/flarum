@@ -2,7 +2,7 @@ forumfortress-flarum:
   admin:
     settings:
       enabled_label: Enable Forum Fortress protection
-      enabled_help: Check registrations, logins, topics, and replies against Forum Fortress.
+      enabled_help: Check registrations, topics, replies, posts, and profile changes against Forum Fortress.
       api_base_url_label: Check API base URL
       control_base_url_label: Control API base URL
       api_key_label: Site API key
@@ -14,7 +14,6 @@ forumfortress-flarum:
       timeout_label: Request timeout in seconds
       fail_open_label: Allow requests when Forum Fortress is unavailable
       fail_open_help: Recommended for normal operation so a network outage does not lock users out.
-      send_ham_label: Report restored posts as ham
       block_reject_action_label: BLOCK moderation action
       block_reject_action_reject: Reject content
       block_reject_action_spam_clean: Spam-clean content and suspend its author
