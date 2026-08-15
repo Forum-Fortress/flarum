@@ -5,7 +5,7 @@ Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.
 ## Features
 
 - Automatic site bootstrap on extension enable, with no API key required.
-- Registration, login, topic, reply, edit, and supported profile checks.
+- Registration, topic, reply, post-edit, and supported profile/signature checks.
 - Immediate enforcement of `BLOCK` decisions through native Flarum errors.
 - Regional endpoint selection, failover, timeout, and fail-open controls.
 - Native Flarum Approval and moderation synchronization.
@@ -24,6 +24,14 @@ main protection extension from activating.
 
 The package includes separate Flarum 1 and Flarum 2 admin bundles generated from
 the same TypeScript source. The appropriate bundle is selected automatically.
+
+## Tracked activity
+
+Forum Fortress checks only initial registrations, new topics, replies, post
+edits, and supported profile changes including signatures. The extension does
+not send login events or moderation hide/restore/approve events. Flarum does
+not provide a contact-form event in this extension; contact forms remain
+outside the plugin's activity tracking.
 
 ## Install
 

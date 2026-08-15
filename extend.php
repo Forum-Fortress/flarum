@@ -45,17 +45,12 @@ return [
         ->default('forumfortress.block_reject_action', 'reject')
         ->default('forumfortress.timeout', '5')
         ->default('forumfortress.fail_open', '1')
-        ->default('forumfortress.send_ham', '1')
         ->default('forumfortress.debug_log', '0'),
 
     (new Extend\Event())
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckRegistration::class)
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckProfile::class)
-        ->listen(Flarum\User\Event\LoggedIn::class, Listener\CheckLogin::class)
-        ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class)
-        ->listen(Flarum\Post\Event\Hidden::class, Listener\ReportPostHidden::class)
-        ->listen(Flarum\Post\Event\Restored::class, Listener\ReportPostRestored::class)
-        ->listen(Flarum\Approval\Event\PostWasApproved::class, Listener\ReportPostApproved::class),
+        ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class),
 
     (new Extend\Routes('api'))
         ->get('/forumfortress/status', 'forumfortress.status', AdminController::class)
