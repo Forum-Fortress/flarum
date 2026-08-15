@@ -3,6 +3,7 @@
 namespace ForumFortress\Flarum\Listener;
 
 use Flarum\Foundation\ValidationException;
+use ForumFortress\Flarum\Api\ForumFortressClient;
 use ForumFortress\Flarum\Api\UnavailableException;
 
 final class Decision
@@ -13,18 +14,22 @@ final class Decision
             return;
         }
 
-        $decision = strtolower((string) ($response['decision'] ?? 'allow'));
+        $decision = strtolower(trim((string) ($response['decision'] ?? '')));
         if ($decision === 'block') {
             throw new ValidationException([
                 'forumfortress' => 'Forum Fortress rejected this request as suspected spam.',
             ]);
+        }
+        if (! in_array($decision, ['allow', 'review'], true)) {
+            throw new UnavailableException('Forum Fortress returned an invalid decision response.');
         }
     }
 
     public static function unavailable(UnavailableException $error): ValidationException
     {
         return new ValidationException([
-            'forumfortress' => 'Forum Fortress is temporarily unavailable. Please try again.',
+            'forumfortress' => 'Forum Fortress is temporarily unavailable. Please try again. Support: '
+                .ForumFortressClient::SUPPORT_URL,
         ]);
     }
 }

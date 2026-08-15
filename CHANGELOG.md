@@ -2,6 +2,43 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.0 - 2026-08-15
+
+- Bootstrap automatically when the extension is enabled, with a bounded timeout
+  that cannot prevent Flarum from completing activation.
+- Make bootstrap retries idempotent with a short-lived recovery token, preventing
+  a lost first response from leaving the extension enabled without credentials.
+- Treat Approval and Flags as optional moderation integrations so their disabled
+  state cannot prevent Forum Fortress from activating on a clean Flarum install.
+- Recover automatically when retained plugin credentials refer to a site that
+  was previously removed.
+- Add authenticated remote deprovisioning for native Flarum purge and an
+  explicit disconnect action for Extension Manager removal workflows.
+- Handle Extension Manager's removal event while the extension is loaded and
+  suppress automatic re-bootstrap after an intentional manual disconnect.
+- Preserve accounts with sibling forums, retain paid non-trial accounts, and
+  remove free, trial, or overdue accounts when their last forum is removed.
+- Link administration, portal, and console errors directly to Forum Fortress
+  support, and retain local credentials when remote cleanup fails.
+- Move GET credentials out of URL query strings, validate decision and
+  moderation-action allowlists, restrict portal redirects, and shorten
+  non-critical report and enable-time network work.
+- Keep console diagnostics compatible with both supported Flarum series and
+  preserve the configured control-plane error when fallback endpoints also
+  fail, with a direct support link on every command failure.
+- Keep scheduled heartbeat syncs on normal bootstrap backoff while allowing
+  operators to request an immediate retry with `forumfortress:sync --force`.
+- Persist and retry interrupted uninstall cleanup on reinstall, and show
+  disconnected or pending-cleanup states accurately in Flarum Admin.
+- Distinguish an already-removed site from an invalid or revoked credential so
+  existing forums remain pending for cleanup instead of being silently orphaned.
+- Commit site identity before optional notifications, dispatch slow edge and
+  Pushover work off the response path, and remove deleted forum key snapshots
+  from edge nodes so activation and reinstall are not delayed by integrations.
+- Make concurrent bootstrap of shared test-harness sites idempotent, verify the
+  administration TypeScript against both supported Flarum type surfaces, and
+  include the support link in debug-log failures.
+
 ## 1.2.0 - 2026-08-14
 
 - Publish the Extension Manager-compatible administration bundles for Flarum

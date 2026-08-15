@@ -23,7 +23,19 @@ final class PortalController implements RequestHandlerInterface
             $result = $this->client->portalLaunch();
             $url = trim((string) ($result['portal_url'] ?? ''));
 
-            if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+            $trustedHost = $host === 'forumfortress.com'
+                || str_ends_with($host, '.forumfortress.com')
+                || $host === 'ffapi.net'
+                || str_ends_with($host, '.ffapi.net');
+            $localDevelopment = $scheme === 'http' && in_array($host, ['127.0.0.1', 'localhost', '::1'], true);
+
+            if (
+                $url === ''
+                || filter_var($url, FILTER_VALIDATE_URL) === false
+                || (! ($scheme === 'https' && $trustedHost) && ! $localDevelopment)
+            ) {
                 throw new \UnexpectedValueException('Forum Fortress did not return a valid portal URL.');
             }
 
@@ -33,7 +45,9 @@ final class PortalController implements RequestHandlerInterface
 
             return new HtmlResponse(
                 '<!doctype html><html lang="en"><meta charset="utf-8"><title>Forum Fortress Portal</title>'
-                . '<body><h1>Portal launch failed</h1><p>' . $message . '</p></body></html>',
+                . '<body><h1>Portal launch failed</h1><p>' . $message . '</p><p><a href="'
+                . ForumFortressClient::SUPPORT_URL
+                . '">Contact Forum Fortress support</a></p></body></html>',
                 502
             );
         }

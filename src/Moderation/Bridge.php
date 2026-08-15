@@ -9,6 +9,7 @@ use Flarum\Foundation\Config;
 use Flarum\Group\Group;
 use Flarum\Post\CommentPost;
 use Flarum\User\User;
+use Flarum\Extension\ExtensionManager;
 use ForumFortress\Flarum\Api\ForumFortressClient;
 use Illuminate\Contracts\Events\Dispatcher;
 
@@ -17,12 +18,21 @@ final class Bridge
     public function __construct(
         private ForumFortressClient $client,
         private Config $config,
-        private Dispatcher $events
+        private Dispatcher $events,
+        private ExtensionManager $extensions
     ) {
     }
 
     public function sync(): array
     {
+        if (! $this->isAvailable()) {
+            return [
+                'skipped' => true,
+                'reason' => 'Enable Flarum Approval and Flags to use moderation synchronization.',
+                'queue_items' => 0,
+                'actions' => 0,
+            ];
+        }
         $items = $this->collectQueueItems();
         $push = $this->client->moderationQueueSync($items);
         $pulled = $this->client->pullModerationActions();
@@ -30,6 +40,14 @@ final class Bridge
         $ack = $results === [] ? [] : $this->client->acknowledgeModerationActions($results);
 
         return ['queue_items' => count($items), 'push' => $push, 'actions' => count($results), 'ack' => $ack];
+    }
+
+    public function isAvailable(): bool
+    {
+        return class_exists(PostWasApproved::class)
+            && class_exists(Flag::class)
+            && $this->extensions->isEnabled('flarum-approval')
+            && $this->extensions->isEnabled('flarum-flags');
     }
 
     public function collectQueueItems(): array
@@ -70,16 +88,25 @@ final class Bridge
         foreach ($actions as $action) {
             $id = (int) ($action['id'] ?? 0);
             try {
+                if ($id < 1) throw new \UnexpectedValueException('Moderation action is missing a valid ID.');
                 if (! $actor) throw new \RuntimeException('No administrator is available to apply moderation actions.');
-                $post = $this->findPost((string) ($action['remote_content_type'] ?? ''), (int) ($action['remote_content_id'] ?? 0));
+                $contentType = strtolower(trim((string) ($action['remote_content_type'] ?? '')));
+                $actionName = strtolower(trim((string) ($action['action'] ?? '')));
+                if (! in_array($contentType, ['thread', 'post'], true)) {
+                    throw new \UnexpectedValueException('Unknown moderation content type.');
+                }
+                if (! in_array($actionName, ['approve', 'reject', 'spam_clean'], true)) {
+                    throw new \UnexpectedValueException('Unknown moderation action.');
+                }
+                $post = $this->findPost($contentType, (int) ($action['remote_content_id'] ?? 0));
                 if (! $post) {
                     $results[] = ['id' => $id, 'status' => 'applied', 'message' => 'Queue item is no longer pending.'];
                     continue;
                 }
-                match ((string) ($action['action'] ?? 'approve')) {
+                match ($actionName) {
+                    'approve' => $this->approve($post, $actor),
                     'reject' => $this->reject($post),
                     'spam_clean' => $this->spamClean($post),
-                    default => $this->approve($post, $actor),
                 };
                 $results[] = ['id' => $id, 'status' => 'applied', 'message' => 'Action applied.'];
             } catch (\Throwable $error) {
@@ -93,9 +120,13 @@ final class Bridge
     {
         if ($id < 1) return null;
         $query = CommentPost::query()->where('is_approved', false);
-        return $type === 'thread'
-            ? $query->where('discussion_id', $id)->where('number', 1)->first()
-            : $query->whereKey($id)->first();
+        if ($type === 'thread') {
+            return $query->where('discussion_id', $id)->where('number', 1)->first();
+        }
+        if ($type === 'post') {
+            return $query->whereKey($id)->first();
+        }
+        return null;
     }
 
     private function approve(CommentPost $post, User $actor): void
