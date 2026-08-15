@@ -19,15 +19,18 @@
     "support": {
         "docs": "https://forumfortress.com/docs/install/flarum/",
         "forum": "https://forumfortress.com/#support",
-        "issues": "https://github.com/forum-fortress/flarum/issues",
-        "source": "https://github.com/forum-fortress/flarum"
+        "issues": "https://github.com/Forum-Fortress/flarum/issues",
+        "source": "https://github.com/Forum-Fortress/flarum"
     },
     "require": {
         "php": ">=8.0",
         "flarum/core": "^1.8 || ^2.0.0-rc.5",
-        "flarum/approval": "^1.8 || ^2.0.0-rc.5",
-        "flarum/flags": "^1.8 || ^2.0.0-rc.5",
         "guzzlehttp/guzzle": "^7.0"
+    },
+    "suggest": {
+        "flarum/approval": "Enables Forum Fortress moderation queue synchronization.",
+        "flarum/flags": "Enables Forum Fortress moderation queue synchronization.",
+        "flarum/suspend": "Enables spam-clean actions to suspend abusive accounts."
     },
     "autoload": {
         "psr-4": {
@@ -40,8 +43,10 @@
         },
         "flarum-extension": {
             "title": "Forum Fortress",
-            "category": "security",
+            "category": "feature",
             "optional-dependencies": [
+                "flarum/approval",
+                "flarum/flags",
                 "flarum/suspend"
             ],
             "icon": {

@@ -5,6 +5,7 @@ namespace ForumFortress\Flarum\Api;
 use Flarum\Http\RequestUtil;
 use Flarum\Settings\SettingsRepositoryInterface;
 use ForumFortress\Flarum\Moderation\Bridge;
+use ForumFortress\Flarum\UninstallManager;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -15,7 +16,8 @@ final class AdminController implements RequestHandlerInterface
     public function __construct(
         private ForumFortressClient $client,
         private Bridge $bridge,
-        private SettingsRepositoryInterface $settings
+        private SettingsRepositoryInterface $settings,
+        private UninstallManager $uninstall
     ) {
     }
 
@@ -32,23 +34,45 @@ final class AdminController implements RequestHandlerInterface
                 'forumfortress.portal' => $this->client->portalLaunch(),
                 'forumfortress.test' => $this->connectionTest(),
                 'forumfortress.sync' => $this->synchronize(),
+                'forumfortress.deprovision' => $this->uninstall->deprovision('manual_disconnect', true),
                 default => $this->dashboardStatus(),
             };
 
             return new JsonResponse(['data' => $data]);
         } catch (\Throwable $error) {
-            return new JsonResponse(['error' => $error->getMessage()], 502);
+            return new JsonResponse([
+                'error' => $error->getMessage(),
+                'support_url' => ForumFortressClient::SUPPORT_URL,
+            ], 502);
         }
     }
 
     private function dashboardStatus(): array
     {
+        if ($this->settings->get('forumfortress.bootstrap_suppressed', '0') === '1') {
+            return [
+                'status' => [
+                    'status' => 'disconnected',
+                    'message' => 'Automatic bootstrap is paused until Forum Fortress is explicitly reconnected.',
+                ],
+                'stats' => [],
+                'endpoints' => $this->client->endpointStateSummary(),
+            ];
+        }
         $status = $this->client->siteStatus();
         $dashboard = [
             'status' => $status,
             'stats' => $this->client->forumStats(),
             'endpoints' => $this->client->endpointStateSummary(),
         ];
+        if ($this->settings->get('forumfortress.deprovision_pending', '0') === '1') {
+            $dashboard['deprovision_pending'] = true;
+            $dashboard['warning'] = (string) $this->settings->get(
+                'forumfortress.last_deprovision_error',
+                'Remote cleanup from a previous removal is still pending.'
+            );
+            $dashboard['support_url'] = ForumFortressClient::SUPPORT_URL;
+        }
 
         $this->cacheDashboardStatus($dashboard);
 
@@ -57,6 +81,7 @@ final class AdminController implements RequestHandlerInterface
 
     private function connectionTest(): array
     {
+        $this->client->bootstrapIfNeeded(true);
         $result = [
             'health' => $this->client->health(),
             'capabilities' => $this->client->capabilities(),
@@ -75,7 +100,11 @@ final class AdminController implements RequestHandlerInterface
 
     private function synchronize(): array
     {
-        $site = $this->client->sync();
+        if ($this->settings->get('forumfortress.bootstrap_suppressed', '0') === '1') {
+            $this->settings->set('forumfortress.bootstrap_suppressed', '0');
+            $this->settings->set('forumfortress.enabled', '1');
+        }
+        $site = $this->client->sync(true);
         $moderation = $this->bridge->sync();
         $dashboard = $this->dashboardStatus();
 

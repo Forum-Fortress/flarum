@@ -5,7 +5,9 @@ use ForumFortress\Flarum\Api\AdminController;
 use ForumFortress\Flarum\Api\PortalController;
 use ForumFortress\Flarum\Console\ModerationSyncCommand;
 use ForumFortress\Flarum\Console\SyncCommand;
+use ForumFortress\Flarum\Lifecycle;
 use ForumFortress\Flarum\Listener;
+use ForumFortress\Flarum\PackageRemovalLifecycle;
 use Illuminate\Console\Scheduling\Event as ScheduleEvent;
 
 $adminJavaScript = str_starts_with(Flarum\Foundation\Application::VERSION, '1.')
@@ -13,6 +15,9 @@ $adminJavaScript = str_starts_with(Flarum\Foundation\Application::VERSION, '1.')
     : __DIR__.'/js/dist/admin.js';
 
 return [
+    new Lifecycle(),
+    new PackageRemovalLifecycle(),
+
     (new Extend\Frontend('admin'))
         ->js($adminJavaScript)
         ->css(__DIR__.'/less/admin.less'),
@@ -25,9 +30,17 @@ return [
         ->default('forumfortress.control_base_url', 'https://control.ffapi.net')
         ->default('forumfortress.api_key', '')
         ->default('forumfortress.site_id', '')
+        ->default('forumfortress.bootstrap_recovery_token', '')
+        ->default('forumfortress.bootstrap_suppressed', '0')
         ->default('forumfortress.preferred_endpoint', '')
         ->default('forumfortress.endpoint_state', '{}')
         ->default('forumfortress.dashboard_status', '{}')
+        ->default('forumfortress.last_bootstrap_error', '')
+        ->default('forumfortress.last_bootstrap_at', '0')
+        ->default('forumfortress.deprovision_pending', '0')
+        ->default('forumfortress.last_deprovision_error', '')
+        ->default('forumfortress.last_deprovision_reason', '')
+        ->default('forumfortress.last_deprovision_at', '0')
         ->default('forumfortress.registration_email', '')
         ->default('forumfortress.block_reject_action', 'reject')
         ->default('forumfortress.timeout', '5')
@@ -52,7 +65,8 @@ return [
         ->post('/forumfortress/attack-mode/end', 'forumfortress.attack.end', AdminController::class)
         ->post('/forumfortress/portal', 'forumfortress.portal', AdminController::class)
         ->post('/forumfortress/test', 'forumfortress.test', AdminController::class)
-        ->post('/forumfortress/sync', 'forumfortress.sync', AdminController::class),
+        ->post('/forumfortress/sync', 'forumfortress.sync', AdminController::class)
+        ->post('/forumfortress/deprovision', 'forumfortress.deprovision', AdminController::class),
 
     (new Extend\Console())
         ->command(SyncCommand::class)

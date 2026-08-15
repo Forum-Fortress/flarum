@@ -86,6 +86,11 @@
   color: var(--ff-green-bright);
 }
 
+.ForumFortressPill.is-disconnected {
+  background: fade(#c53030, 10%);
+  color: #a42424;
+}
+
 .ForumFortressActionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -138,6 +143,11 @@
 }
 
 .ForumFortressNotice span { flex: 1; }
+.ForumFortressNotice > a {
+  flex: 0 0 auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .ForumFortressNoticeDismiss { margin: -7px -8px -7px 0; }
 
 .ForumFortressSectionHeader {
@@ -211,6 +221,10 @@
 .ForumFortressMaintenanceBody p {
   margin: 0 0 12px;
   color: var(--muted-color, #6c7480);
+}
+
+.ForumFortressMaintenanceBody .ForumFortressDisconnectHelp {
+  margin-top: 18px;
 }
 
 .ForumFortressMaintenanceActions {

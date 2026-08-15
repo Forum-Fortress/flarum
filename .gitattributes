@@ -1,5 +1,7 @@
 /.github export-ignore
 /.gitignore export-ignore
+/.pytest_cache export-ignore
+/vendor export-ignore
 /js/node_modules export-ignore
 /js/package-lock.json export-ignore
 /js/package.json export-ignore
