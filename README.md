@@ -35,6 +35,12 @@ outside the plugin's activity tracking.
 
 ## Install
 
+Or search in Extension Manager for Forum Fortress. In **Administration >
+Extensions**, choose **Find more extensions** or **Install extension**, search
+for the official `forumfortress/flarum` package, select **Install**, then
+**Enable** it. Open the Forum Fortress administration page and run **Refresh**
+and **Connection test** after enabling.
+
 From the Flarum root:
 
 ```bash
