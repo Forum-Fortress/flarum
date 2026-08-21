@@ -29,7 +29,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.0';
+    public const PLUGIN_VERSION = '1.3.2';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
     private const CATALOG_TTL = 3600;
     private const HEALTH_TTL = 3600;
@@ -148,7 +148,13 @@ final class ForumFortressClient
         $started = microtime(true);
         $state['last_bootstrap_attempt_at'] = time();
         $this->saveEndpointState($state);
-        $bases = array_values(array_unique(array_merge([$this->controlBaseUrl()], $this->bootstrapCandidates())));
+		$bases = $this->apiRegion() !== 'global'
+			? array_values(array_unique(array_filter([
+				$this->apiBaseUrl(),
+				$this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
+				$this->controlBaseUrl(),
+			])))
+			: array_values(array_unique(array_merge([$this->controlBaseUrl()], $this->bootstrapCandidates())));
         foreach ($bases as $base) {
             $remaining = self::BOOTSTRAP_TOTAL_BUDGET_SECONDS - (microtime(true) - $started);
             if ($remaining <= 0) {
@@ -495,6 +501,19 @@ final class ForumFortressClient
                 $lastError = $error;
                 $this->recordEndpointResult($base, false, 0);
 
+				if ($this->apiRegion() !== 'global' && $base === $this->apiBaseUrl() && (! $error instanceof EndpointRequestException || $error->retryable)) {
+					try {
+						$result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
+						$this->recordEndpointResult($base, true, 0);
+						$this->settings->set('forumfortress.preferred_endpoint', $base);
+						return $result;
+					} catch (\Throwable $retryError) {
+						$lastError = $retryError;
+						$error = $retryError;
+						$this->recordEndpointResult($base, false, 0);
+					}
+				}
+
                 if ($this->isStaleIdentityError($error)) {
                     $this->prepareIdentityRecovery($error);
                     $this->bootstrapIfNeeded(true);
@@ -688,6 +707,12 @@ final class ForumFortressClient
         if (str_starts_with($this->apiKey(), 'ff_ob_') && $preferred !== '') {
             return [$preferred];
         }
+        if ($this->apiRegion() !== 'global') {
+            return array_values(array_filter([
+                $this->apiBaseUrl(),
+                $this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
+            ]));
+        }
 
         $meta = (array) ($state['endpoint_meta'] ?? []);
         $catalog = array_values((array) ($state['catalog'] ?? []));
@@ -812,8 +837,30 @@ final class ForumFortressClient
 
     private function apiBaseUrl(): string
     {
-        return $this->normalizeBaseUrl($this->settings->get('forumfortress.api_base_url', 'https://api.ffapi.net'))
-            ?: 'https://api.ffapi.net';
+		$legacy = $this->normalizeBaseUrl($this->settings->get('forumfortress.api_base_url', ''));
+		if ($this->settings->get('forumfortress.api_region') === null && in_array(strtolower((string) parse_url($legacy, PHP_URL_HOST)), ['localhost', '127.0.0.1', '::1'], true)) {
+			return $legacy;
+		}
+        return [
+            'global' => 'https://api.ffapi.net',
+            'uk' => 'https://api-uk.ffapi.net',
+            'eu' => 'https://api-eu.ffapi.net',
+            'us' => 'https://api-us.ffapi.net',
+        ][$this->apiRegion()];
+    }
+
+    private function apiRegion(): string
+    {
+        $region = strtolower(trim((string) $this->settings->get('forumfortress.api_region', '')));
+        if (in_array($region, ['global', 'uk', 'eu', 'us'], true)) return $region;
+        return match (strtolower($this->normalizeBaseUrl($this->settings->get('forumfortress.api_base_url', '')))) {
+            'https://api-uk.ffapi.net' => 'uk', 'https://api-eu.ffapi.net' => 'eu', 'https://api-us.ffapi.net' => 'us', default => 'global',
+        };
+    }
+
+    private function allowGlobalEmergencyFallback(): bool
+    {
+        return $this->settings->get('forumfortress.allow_global_fallback', '0') === '1';
     }
 
     private function controlBaseUrl(): string

@@ -2,6 +2,13 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.2 - 2026-08-21
+
+- Replace the free-form API endpoint with a Global, UK, EU, or US region
+  selector. Global remains the recommended default.
+- Add an opt-in global emergency fallback for region-locked checks. Regional
+  checks retry the selected hostname before any permitted global fallback.
+
 ## 1.3.0 - 2026-08-15
 
 - Bootstrap automatically when the extension is enabled, with a bounded timeout
