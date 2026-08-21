@@ -2,6 +2,15 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.4 - 2026-08-21
+
+- Respect the selected regional route during connection tests.
+
+## 1.3.3 - 2026-08-21
+
+- Remove the configurable control-plane URL and use the stable public plugin
+  service at `https://fortress.ffapi.net`.
+
 ## 1.3.2 - 2026-08-21
 
 - Replace the free-form API endpoint with a Global, UK, EU, or US region
