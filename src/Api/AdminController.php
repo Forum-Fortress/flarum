@@ -81,12 +81,46 @@ final class AdminController implements RequestHandlerInterface
 
     private function connectionTest(): array
     {
-        $this->client->bootstrapIfNeeded(true);
+        $bootstrapError = null;
+        try {
+            $this->client->bootstrapIfNeeded(true);
+        } catch (\Throwable $error) {
+            // A regional node may remain able to protect a forum while the
+            // control-plane bootstrap path is temporarily unavailable.
+            $bootstrapError = $error->getMessage();
+        }
+
+        $checkRoute = null;
+        $checkRouteError = null;
+        try {
+            $checkRoute = $this->client->checkRouteHealth();
+        } catch (\Throwable $error) {
+            $checkRouteError = $error->getMessage();
+        }
+
+        $controlHealth = null;
+        $controlError = null;
+        try {
+            $controlHealth = $this->client->health();
+        } catch (\Throwable $error) {
+            $controlError = $error->getMessage();
+        }
+
+        if ($checkRoute === null && $controlHealth === null) {
+            throw new \RuntimeException($checkRouteError ?? $controlError ?? $bootstrapError ?? 'Connection test failed.');
+        }
+
         $result = [
-            'health' => $this->client->health(),
-            'capabilities' => $this->client->capabilities(),
-            'status' => $this->client->siteStatus(),
-            'stats' => $this->client->forumStats(),
+            'check_route' => $checkRoute,
+            'check_route_error' => $checkRouteError,
+            'control_health' => $controlHealth,
+            'control_error' => $controlError,
+            'bootstrap_error' => $bootstrapError,
+            // Retained for older admin bundles and integrations.
+            'health' => $controlHealth,
+            'capabilities' => $controlHealth === null ? null : $this->client->capabilities(),
+            'status' => $controlHealth === null ? [] : $this->client->siteStatus(),
+            'stats' => $controlHealth === null ? [] : $this->client->forumStats(),
         ];
 
         $this->cacheDashboardStatus([

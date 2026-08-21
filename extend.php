@@ -29,7 +29,6 @@ return [
         ->default('forumfortress.api_base_url', 'https://api.ffapi.net')
         ->default('forumfortress.api_region', 'global')
         ->default('forumfortress.allow_global_fallback', '0')
-        ->default('forumfortress.control_base_url', 'https://control.ffapi.net')
         ->default('forumfortress.api_key', '')
         ->default('forumfortress.site_id', '')
         ->default('forumfortress.bootstrap_recovery_token', '')

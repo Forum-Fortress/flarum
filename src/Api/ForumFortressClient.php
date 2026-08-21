@@ -29,7 +29,8 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.2';
+    public const PLUGIN_VERSION = '1.3.4';
+    private const CONTROL_BASE_URL = 'https://fortress.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
     private const CATALOG_TTL = 3600;
     private const HEALTH_TTL = 3600;
@@ -308,6 +309,38 @@ final class ForumFortressClient
     public function health(): array
     {
         return $this->request('GET', $this->controlBaseUrl().'/health');
+    }
+
+    /**
+     * Probe the selected live-check route without submitting forum content.
+     * This deliberately avoids the control plane so the admin can verify that
+     * regional protection remains reachable during a control-plane outage.
+     *
+     * @return array{endpoint: string, health: array, check_ready: array}
+     */
+    public function checkRouteHealth(): array
+    {
+        $lastError = null;
+
+        foreach ($this->checkCandidates() as $base) {
+            try {
+                $health = $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
+                $ready = $this->request('GET', $base.'/v1/check-ready', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
+                $this->recordEndpointResult($base, true, 0);
+                $this->settings->set('forumfortress.preferred_endpoint', $base);
+
+                return [
+                    'endpoint' => $base,
+                    'health' => $health,
+                    'check_ready' => $ready,
+                ];
+            } catch (\Throwable $error) {
+                $lastError = $error;
+                $this->recordEndpointResult($base, false, 0);
+            }
+        }
+
+        throw $lastError ?: new \RuntimeException('No selected Forum Fortress check endpoint is available.');
     }
 
     public function registerSite(string $email): array
@@ -704,14 +737,14 @@ final class ForumFortressClient
     {
         $state = $this->endpointState();
         $preferred = $this->normalizeBaseUrl((string) $this->settings->get('forumfortress.preferred_endpoint', ''));
-        if (str_starts_with($this->apiKey(), 'ff_ob_') && $preferred !== '') {
-            return [$preferred];
-        }
         if ($this->apiRegion() !== 'global') {
             return array_values(array_filter([
                 $this->apiBaseUrl(),
                 $this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
             ]));
+        }
+        if (str_starts_with($this->apiKey(), 'ff_ob_') && $preferred !== '') {
+            return [$preferred];
         }
 
         $meta = (array) ($state['endpoint_meta'] ?? []);
@@ -865,8 +898,7 @@ final class ForumFortressClient
 
     private function controlBaseUrl(): string
     {
-        return $this->normalizeBaseUrl($this->settings->get('forumfortress.control_base_url', 'https://control.ffapi.net'))
-            ?: 'https://control.ffapi.net';
+        return self::CONTROL_BASE_URL;
     }
 
     private function timeout(): int

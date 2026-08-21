@@ -56,14 +56,6 @@ app.initializers.add(extensionId, () => {
     type: "boolean",
   });
   registrar.registerSetting({
-    setting: "forumfortress.control_base_url",
-    label: app.translator.trans(
-      "forumfortress-flarum.admin.settings.control_base_url_label"
-    ),
-    type: "url",
-    placeholder: "https://control.ffapi.net",
-  });
-  registrar.registerSetting({
     setting: "forumfortress.api_key",
     label: app.translator.trans(
       "forumfortress-flarum.admin.settings.api_key_label"
