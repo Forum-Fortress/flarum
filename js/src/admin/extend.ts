@@ -38,12 +38,22 @@ app.initializers.add(extensionId, () => {
     type: "boolean",
   });
   registrar.registerSetting({
-    setting: "forumfortress.api_base_url",
-    label: app.translator.trans(
-      "forumfortress-flarum.admin.settings.api_base_url_label"
-    ),
-    type: "url",
-    placeholder: "https://api.ffapi.net",
+    setting: "forumfortress.api_region",
+    label: app.translator.trans("forumfortress-flarum.admin.settings.api_region_label"),
+    help: app.translator.trans("forumfortress-flarum.admin.settings.api_region_help"),
+    type: "select",
+    options: {
+      global: app.translator.trans("forumfortress-flarum.admin.settings.region_global"),
+      uk: app.translator.trans("forumfortress-flarum.admin.settings.region_uk"),
+      eu: app.translator.trans("forumfortress-flarum.admin.settings.region_eu"),
+      us: app.translator.trans("forumfortress-flarum.admin.settings.region_us"),
+    },
+  });
+  registrar.registerSetting({
+    setting: "forumfortress.allow_global_fallback",
+    label: app.translator.trans("forumfortress-flarum.admin.settings.allow_global_fallback_label"),
+    help: app.translator.trans("forumfortress-flarum.admin.settings.allow_global_fallback_help"),
+    type: "boolean",
   });
   registrar.registerSetting({
     setting: "forumfortress.control_base_url",
@@ -72,16 +82,6 @@ app.initializers.add(extensionId, () => {
       "forumfortress-flarum.admin.settings.registration_email_help"
     ),
     type: "email",
-  });
-  registrar.registerSetting({
-    setting: "forumfortress.preferred_endpoint",
-    label: app.translator.trans(
-      "forumfortress-flarum.admin.settings.preferred_endpoint_label"
-    ),
-    help: app.translator.trans(
-      "forumfortress-flarum.admin.settings.preferred_endpoint_help"
-    ),
-    type: "url",
   });
   registrar.registerSetting({
     setting: "forumfortress.timeout",

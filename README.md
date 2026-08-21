@@ -84,6 +84,18 @@ deprovisioning, allowing a failed removal or a later reinstall to recover safely
 
 For scheduler setup, configuration, updates, removal, and troubleshooting, use the full installation guide.
 
+## API region lock
+
+The administrator can select Global (the default), United Kingdom only,
+European Union only, or United States only. Regional modes keep live check
+traffic on the matching `api-uk`, `api-eu`, or `api-us` hostname. The optional
+global emergency fallback is disabled by default. When enabled, the plugin
+retries the regional hostname first and may then use `api.ffapi.net`; processing
+may consequently occur outside the selected region. Endpoint URLs are not
+free-form administrator settings.
+The region lock applies to live spam checks; bootstrap, portal, and account
+management continue through the global control plane.
+
 ## Documentation and support
 
 - [Flarum 1.8.x and 2.x installation and configuration](https://forumfortress.com/docs/install/flarum/)
