@@ -2,6 +2,13 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.6 - 2026-08-25
+
+- Require HTTPS for every service endpoint, including local and private
+  deployments, with no plaintext transport exception.
+- Use the public `/health` contract for reachability and stop requesting the
+  internal `/v1/check-ready` route.
+
 ## 1.3.5 - 2026-08-25
 
 - Verify compatibility with Flarum Core `2.0.0-rc.7`, Approval
