@@ -2,6 +2,22 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.5 - 2026-08-25
+
+- Verify compatibility with Flarum Core `2.0.0-rc.7`, Approval
+  `2.0.0-rc.7`, and Flags `2.0.0-rc.7`, including an upgrade from the
+  existing `2.0.0-rc.5` test forum.
+- Retain Flarum 1.8 support and repeat the full activation, bootstrap,
+  scheduler, removal, reinstall, and reactivation checks on Flarum Core
+  `1.8.19`, Approval `1.8.2`, and Flags `1.8.2`.
+- Add app-bootstrapped administration component tests using Flarum's
+  standalone frontend test tooling while continuing to build and validate
+  separate Flarum 1.8 and 2.x administration bundles.
+- Use the public `/health` response as the plugin readiness contract and stop
+  requesting the removed `/v1/check-ready` endpoint.
+- Require HTTPS for service endpoints and trusted portal redirects, removing
+  the legacy plaintext localhost overrides from production plugin code.
+
 ## 1.3.4 - 2026-08-21
 
 - Respect the selected regional route during connection tests.

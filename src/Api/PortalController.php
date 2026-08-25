@@ -29,12 +29,11 @@ final class PortalController implements RequestHandlerInterface
                 || str_ends_with($host, '.forumfortress.com')
                 || $host === 'ffapi.net'
                 || str_ends_with($host, '.ffapi.net');
-            $localDevelopment = $scheme === 'http' && in_array($host, ['127.0.0.1', 'localhost', '::1'], true);
 
             if (
                 $url === ''
                 || filter_var($url, FILTER_VALIDATE_URL) === false
-                || (! ($scheme === 'https' && $trustedHost) && ! $localDevelopment)
+                || ! ($scheme === 'https' && $trustedHost)
             ) {
                 throw new \UnexpectedValueException('Forum Fortress did not return a valid portal URL.');
             }

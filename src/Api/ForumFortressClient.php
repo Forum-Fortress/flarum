@@ -29,7 +29,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.4';
+    public const PLUGIN_VERSION = '1.3.5';
     private const CONTROL_BASE_URL = 'https://fortress.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
     private const CATALOG_TTL = 3600;
@@ -253,8 +253,9 @@ final class ForumFortressClient
             $t0 = microtime(true);
             try {
                 $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                $this->request('GET', $base.'/v1/check-ready', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
                 $health[$base] = ['latency_ms' => max(1, (int) round((microtime(true) - $t0) * 1000)), 'last_success_at' => time()];
+                // Retain the persisted key for upgrade compatibility. Public
+                // plugin readiness is now represented exclusively by /health.
                 $meta[$base]['check_ready'] = true;
             } catch (\Throwable $error) {
                 $health[$base] = ['latency_ms' => null, 'last_failure_at' => time()];
@@ -325,14 +326,14 @@ final class ForumFortressClient
         foreach ($this->checkCandidates() as $base) {
             try {
                 $health = $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                $ready = $this->request('GET', $base.'/v1/check-ready', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
                 $this->recordEndpointResult($base, true, 0);
                 $this->settings->set('forumfortress.preferred_endpoint', $base);
 
                 return [
                     'endpoint' => $base,
                     'health' => $health,
-                    'check_ready' => $ready,
+                    // Kept as an alias for extensions consuming the old shape.
+                    'check_ready' => $health,
                 ];
             } catch (\Throwable $error) {
                 $lastError = $error;
@@ -842,14 +843,7 @@ final class ForumFortressClient
             return '';
         }
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-        if ($scheme === 'https') {
-            return $url;
-        }
-        if ($scheme === 'http' && in_array($host, ['127.0.0.1', 'localhost', '::1'], true)) {
-            return $url;
-        }
-        return '';
+        return $scheme === 'https' ? $url : '';
     }
 
     private function apiKey(): string
@@ -870,10 +864,6 @@ final class ForumFortressClient
 
     private function apiBaseUrl(): string
     {
-		$legacy = $this->normalizeBaseUrl($this->settings->get('forumfortress.api_base_url', ''));
-		if ($this->settings->get('forumfortress.api_region') === null && in_array(strtolower((string) parse_url($legacy, PHP_URL_HOST)), ['localhost', '127.0.0.1', '::1'], true)) {
-			return $legacy;
-		}
         return [
             'global' => 'https://api.ffapi.net',
             'uk' => 'https://api-uk.ffapi.net',

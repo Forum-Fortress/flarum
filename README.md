@@ -14,7 +14,8 @@ Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.
 
 ## Requirements
 
-- Flarum `1.8.x` or `2.x`.
+- Flarum `1.8.x` (tested on `1.8.19`) or `2.x` (tested on
+  `2.0.0-rc.7`).
 - PHP 8.0 or newer (Flarum 2 itself requires the newer PHP version supported by that release).
 - Outbound HTTPS access to Forum Fortress services.
 
