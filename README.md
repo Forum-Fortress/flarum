@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.3.7`.
+Current release: `1.3.7.1`.
 
 ## Features
 
@@ -16,8 +16,8 @@ Current release: `1.3.7`.
 
 ## Requirements
 
-- Flarum `1.8.x` (tested on `1.8.19`) or `2.x` (tested on
-  `2.0.0-rc.7`).
+- Flarum `1.8.x` (tested on `1.8.19`) or `2.x` (tested through
+  `2.0.0-rc.8`).
 - PHP 8.0 or newer (Flarum 2 itself requires the newer PHP version supported by that release).
 - Outbound HTTPS access to Forum Fortress services.
 

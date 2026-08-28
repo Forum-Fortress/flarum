@@ -2,6 +2,16 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.7.1 - 2026-08-28
+
+- Certify compatibility with Flarum Core, Approval, Flags, and Suspend
+  `2.0.0-rc.8` on PHP 8.4, including clean install, activation, migrations,
+  live bootstrap, lost-response recovery, checks, removal, reinstall, and
+  reactivation.
+- Keep Flarum 1.8 support and the existing Flarum 2 RC5-or-newer Composer
+  constraint while making the latest tested Flarum release explicit in public
+  package metadata.
+
 ## 1.3.7 - 2026-08-27
 
 - Retry an incomplete anonymous bootstrap from ordinary public GET traffic,
