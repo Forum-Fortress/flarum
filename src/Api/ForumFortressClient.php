@@ -29,7 +29,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.6';
+    public const PLUGIN_VERSION = '1.3.7';
     private const CONTROL_BASE_URL = 'https://fortress.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
     private const CATALOG_TTL = 3600;
@@ -288,10 +288,12 @@ final class ForumFortressClient
 
     public function siteStatus(?int $timeoutOverride = null): array
     {
-        return $this->requestControlWithIdentityRecovery('GET', '/v1/site/status', fn (): array => [
+        $status = $this->requestControlWithIdentityRecovery('GET', '/v1/site/status', fn (): array => [
             'api_key' => $this->apiKey(),
             'domain' => $this->domain(),
         ], false, $timeoutOverride);
+        $this->persistIdentity($status);
+        return $status;
     }
 
     public function forumStats(): array
@@ -404,8 +406,7 @@ final class ForumFortressClient
             if (strtolower((string) $error->errorCode) === 'stale_site') {
                 // Keep the still-valid key, recover the current site linkage,
                 // then retry so stale local metadata cannot strand an uninstall.
-                $this->prepareIdentityRecovery($error);
-                $this->bootstrapIfNeeded(true);
+                $this->recoverIdentityOrRestore($error);
                 return $this->request('POST', $this->controlBaseUrl().'/v1/site/deprovision', array_merge(
                     $this->commonPayload(),
                     ['reason' => $reason]
@@ -461,15 +462,26 @@ final class ForumFortressClient
 
         $this->refreshEndpointCatalog();
         $this->refreshEndpointHealth();
+        $ping = $this->confirmConnection(null, $forceBootstrap);
+
+        return ['enabled' => true, 'ping' => $ping, 'endpoint_state' => $this->endpointStateSummary()];
+    }
+
+    public function confirmConnection(?int $timeoutOverride = null, bool $forceBootstrap = false): array
+    {
         $ping = $this->requestControlWithIdentityRecovery(
             'POST',
             '/v1/site/ping',
             fn (): array => $this->commonPayload(),
-            $forceBootstrap
+            $forceBootstrap,
+            $timeoutOverride
         );
         $this->persistIdentity($ping);
+        $state = $this->endpointState();
+        $state['last_site_ping_at'] = time();
+        $this->saveEndpointState($state);
 
-        return ['enabled' => true, 'ping' => $ping, 'endpoint_state' => $this->endpointStateSummary()];
+        return $ping;
     }
 
     public function endpointStateSummary(): array
@@ -483,6 +495,7 @@ final class ForumFortressClient
             'last_health_at' => (int) ($state['last_health_at'] ?? 0),
             'key_type' => (string) ($state['key_type'] ?? 'normal'),
             'rebootstrap_at' => (int) ($state['rebootstrap_at'] ?? 0),
+            'last_site_ping_at' => (int) ($state['last_site_ping_at'] ?? 0),
         ];
     }
 
@@ -549,8 +562,7 @@ final class ForumFortressClient
 				}
 
                 if ($this->isStaleIdentityError($error)) {
-                    $this->prepareIdentityRecovery($error);
-                    $this->bootstrapIfNeeded(true);
+                    $this->recoverIdentityOrRestore($error);
                     $payload = array_merge($payload, $this->commonPayload());
                     try {
                         $result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
@@ -640,15 +652,21 @@ final class ForumFortressClient
         ?int $timeoutOverride = null
     ): array
     {
-        $this->bootstrapIfNeeded($forceBootstrap);
+        try {
+            $this->bootstrapIfNeeded($forceBootstrap);
+        } catch (EndpointRequestException $error) {
+            if (! $this->isStaleIdentityError($error)) {
+                throw $error;
+            }
+            $this->recoverIdentityOrRestore($error);
+        }
         try {
             return $this->request($method, $this->controlBaseUrl().$path, $payload(), $timeoutOverride);
         } catch (EndpointRequestException $error) {
             if (! $this->isStaleIdentityError($error)) {
                 throw $error;
             }
-            $this->prepareIdentityRecovery($error);
-            $this->bootstrapIfNeeded(true);
+            $this->recoverIdentityOrRestore($error);
             return $this->request($method, $this->controlBaseUrl().$path, $payload(), $timeoutOverride);
         }
     }
@@ -693,6 +711,38 @@ final class ForumFortressClient
             return;
         }
         $this->clearIdentity();
+    }
+
+    private function recoverIdentityOrRestore(\Throwable $error): void
+    {
+        $settingNames = [
+            'api_key',
+            'site_id',
+            'bootstrap_recovery_token',
+            'preferred_endpoint',
+            'endpoint_state',
+            'dashboard_status',
+            'enabled',
+            'bootstrap_suppressed',
+        ];
+        $snapshot = [];
+        foreach ($settingNames as $name) {
+            $snapshot[$name] = (string) $this->settings->get('forumfortress.'.$name, '');
+        }
+
+        $this->prepareIdentityRecovery($error);
+        try {
+            $this->bootstrapIfNeeded(true);
+        } catch (\Throwable $recoveryError) {
+            // A valid credential can be briefly unknown to a newly selected
+            // edge. If the control plane declines cautious recovery for an
+            // already-synced site, preserve the last stored identity instead
+            // of turning a transient 401 into permanent local data loss.
+            foreach ($snapshot as $name => $value) {
+                $this->settings->set('forumfortress.'.$name, $value);
+            }
+            throw $recoveryError;
+        }
     }
 
     private function commonPayload(): array

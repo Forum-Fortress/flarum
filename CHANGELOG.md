@@ -2,6 +2,18 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.7 - 2026-08-27
+
+- Retry an incomplete anonymous bootstrap from ordinary public GET traffic,
+  with a five-minute backoff, so forums recover even when the Flarum scheduler
+  is not running and no administrator revisits the extension.
+- Persist identity fields returned by site status, repairing installations
+  interrupted between storing their API key and site ID.
+- Confirm recovered credentials with an authenticated ping and keep retrying
+  from public traffic until that two-way handshake succeeds.
+- Apply the same stale-key recovery path when a forced scheduled/admin sync
+  encounters an invalid stored key during its initial bootstrap attempt.
+
 ## 1.3.6 - 2026-08-25
 
 - Require HTTPS for every service endpoint, including local and private

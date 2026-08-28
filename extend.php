@@ -7,6 +7,7 @@ use ForumFortress\Flarum\Console\ModerationSyncCommand;
 use ForumFortress\Flarum\Console\SyncCommand;
 use ForumFortress\Flarum\Lifecycle;
 use ForumFortress\Flarum\Listener;
+use ForumFortress\Flarum\Middleware\BackgroundBootstrap;
 use ForumFortress\Flarum\PackageRemovalLifecycle;
 use Illuminate\Console\Scheduling\Event as ScheduleEvent;
 
@@ -38,6 +39,7 @@ return [
         ->default('forumfortress.dashboard_status', '{}')
         ->default('forumfortress.last_bootstrap_error', '')
         ->default('forumfortress.last_bootstrap_at', '0')
+        ->default('forumfortress.last_background_recovery_at', '0')
         ->default('forumfortress.deprovision_pending', '0')
         ->default('forumfortress.last_deprovision_error', '')
         ->default('forumfortress.last_deprovision_reason', '')
@@ -47,6 +49,9 @@ return [
         ->default('forumfortress.timeout', '5')
         ->default('forumfortress.fail_open', '1')
         ->default('forumfortress.debug_log', '0'),
+
+    (new Extend\Middleware('forum'))
+        ->add(BackgroundBootstrap::class),
 
     (new Extend\Event())
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckRegistration::class)
