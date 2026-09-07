@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.3.7.1`.
+Next release: `1.3.7.2`.
 
 ## Features
 
@@ -96,6 +96,8 @@ global emergency fallback is disabled by default. When enabled, the plugin
 retries the regional hostname first and may then use `api.ffapi.net`; processing
 may consequently occur outside the selected region. Endpoint URLs are not
 free-form administrator settings.
+Global mode relies on GeoDNS. The cached endpoint catalog is used only for
+same-request failover; the next request starts at GeoDNS again.
 The region lock applies to live spam checks; bootstrap, portal, and account
 management continue through the global control plane.
 
@@ -109,4 +111,12 @@ management continue through the global control plane.
 
 ## License
 
-Copyright (c) 2026 Forum Fortress. This extension is proprietary software; see [LICENSE](LICENSE).
+The Forum Fortress plugin is free and open-source software licensed under the
+GNU General Public License, version 2 or later (`GPL-2.0-or-later`). See
+[LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+The Forum Fortress hosted service is separate and is governed by its service
+terms. The plugin licence does not provide a subscription, credentials or
+access to private backend code. Contributions use the same project licence,
+contributors retain their copyright, and no contributor licence agreement or
+copyright assignment is required; see [CONTRIBUTING.md](CONTRIBUTING.md).

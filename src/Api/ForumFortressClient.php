@@ -29,19 +29,15 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.7.1';
+    public const PLUGIN_VERSION = '1.3.7.2';
     private const CONTROL_BASE_URL = 'https://fortress.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
     private const CATALOG_TTL = 3600;
-    private const HEALTH_TTL = 3600;
-    private const DEGRADED_HEALTH_TTL = 300;
-    private const HEALTH_TOTAL_BUDGET_SECONDS = 5;
     private const CHECK_TOTAL_BUDGET_SECONDS = 5;
     private const CHECK_ENDPOINT_TIMEOUT_SECONDS = 1;
     private const BOOTSTRAP_TOTAL_BUDGET_SECONDS = 3;
     private const BOOTSTRAP_ENDPOINT_TIMEOUT_SECONDS = 1;
     private const BOOTSTRAP_RETRY_BACKOFF_SECONDS = 300;
-    private const FAILED_ENDPOINT_COOLDOWN = 300;
     private const REPORT_TIMEOUT_SECONDS = 1;
 
     private HttpClient $http;
@@ -233,55 +229,16 @@ final class ForumFortressClient
 
     public function refreshEndpointHealth(bool $force = false): array
     {
-        $state = $this->endpointState();
-        $last = (int) ($state['last_health_at'] ?? 0);
-        $ttl = ! empty($state['slow_health_mode']) ? self::DEGRADED_HEALTH_TTL : self::HEALTH_TTL;
-        if (! $force && $last > 0 && time() - $last < $ttl) return $state;
-
-        $meta = (array) ($state['endpoint_meta'] ?? []);
-        $candidates = array_values((array) ($state['catalog'] ?? []));
-        usort($candidates, fn (string $a, string $b): int =>
-            (int) (($state['health'][$a]['latency_ms'] ?? 999999)) <=> (int) (($state['health'][$b]['latency_ms'] ?? 999999))
+        $state = $this->refreshEndpointCatalog($force);
+        unset(
+            $state['health'],
+            $state['last_health_at'],
+            $state['best_latency_ms'],
+            $state['slow_health_mode'],
+            $state['preferred_candidate'],
+            $state['preferred_candidate_streak']
         );
-        $health = [];
-        $started = microtime(true);
-        foreach ($candidates as $base) {
-            $base = $this->normalizeBaseUrl($base);
-            $role = strtolower((string) ($meta[$base]['role'] ?? ''));
-            if ($base === '' || in_array($role, ['backup', 'control', 'control-fallback'], true)) continue;
-            if ((microtime(true) - $started) >= self::HEALTH_TOTAL_BUDGET_SECONDS) break;
-            $t0 = microtime(true);
-            try {
-                $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                $health[$base] = ['latency_ms' => max(1, (int) round((microtime(true) - $t0) * 1000)), 'last_success_at' => time()];
-                // Retain the persisted key for upgrade compatibility. Public
-                // plugin readiness is now represented exclusively by /health.
-                $meta[$base]['check_ready'] = true;
-            } catch (\Throwable $error) {
-                $health[$base] = ['latency_ms' => null, 'last_failure_at' => time()];
-                $meta[$base]['check_ready'] = false;
-            }
-        }
-        $healthy = array_filter($health, static fn (array $row): bool => is_int($row['latency_ms'] ?? null));
-        uasort($healthy, static fn (array $a, array $b): int => $a['latency_ms'] <=> $b['latency_ms']);
-        $best = (string) (array_key_first($healthy) ?? '');
-        $current = $this->normalizeBaseUrl((string) $this->settings->get('forumfortress.preferred_endpoint', ''));
-        if ($best !== '' && $current !== '' && $best !== $current && isset($healthy[$current])) {
-            $candidate = (string) ($state['preferred_candidate'] ?? '');
-            $streak = $candidate === $best ? (int) ($state['preferred_candidate_streak'] ?? 0) + 1 : 1;
-            $state['preferred_candidate'] = $best;
-            $state['preferred_candidate_streak'] = $streak;
-            if ($streak < 2) $best = $current;
-        } else {
-            unset($state['preferred_candidate'], $state['preferred_candidate_streak']);
-        }
-        if ($best !== '') $this->settings->set('forumfortress.preferred_endpoint', $best);
-        $bestLatency = (int) ($healthy[$best]['latency_ms'] ?? 0);
-        $state['health'] = $health;
-        $state['endpoint_meta'] = $meta;
-        $state['last_health_at'] = time();
-        $state['best_latency_ms'] = $bestLatency;
-        $state['slow_health_mode'] = $bestLatency === 0 || $bestLatency > 100;
+        $this->settings->set('forumfortress.preferred_endpoint', $this->apiBaseUrl());
         $this->saveEndpointState($state);
         return $state;
     }
@@ -329,8 +286,6 @@ final class ForumFortressClient
             try {
                 $health = $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
                 $this->recordEndpointResult($base, true, 0);
-                $this->settings->set('forumfortress.preferred_endpoint', $base);
-
                 return [
                     'endpoint' => $base,
                     'health' => $health,
@@ -488,11 +443,11 @@ final class ForumFortressClient
     {
         $state = $this->endpointState();
         return [
-            'preferred' => (string) $this->settings->get('forumfortress.preferred_endpoint', ''),
+            'preferred' => $this->apiBaseUrl(),
             'catalog' => array_values((array) ($state['catalog'] ?? [])),
             'catalog_fetched_at' => (int) ($state['catalog_fetched_at'] ?? 0),
-            'health' => (array) ($state['health'] ?? []),
-            'last_health_at' => (int) ($state['last_health_at'] ?? 0),
+            'health' => [],
+            'last_health_at' => (int) ($state['catalog_fetched_at'] ?? 0),
             'key_type' => (string) ($state['key_type'] ?? 'normal'),
             'rebootstrap_at' => (int) ($state['rebootstrap_at'] ?? 0),
             'last_site_ping_at' => (int) ($state['last_site_ping_at'] ?? 0),
@@ -542,7 +497,6 @@ final class ForumFortressClient
                 $attemptStarted = microtime(true);
                 $result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
                 $this->recordEndpointResult($base, true, (int) ((microtime(true) - $attemptStarted) * 1000));
-                $this->settings->set('forumfortress.preferred_endpoint', $base);
                 return $result;
             } catch (\Throwable $error) {
                 $lastError = $error;
@@ -552,7 +506,6 @@ final class ForumFortressClient
 					try {
 						$result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
 						$this->recordEndpointResult($base, true, 0);
-						$this->settings->set('forumfortress.preferred_endpoint', $base);
 						return $result;
 					} catch (\Throwable $retryError) {
 						$lastError = $retryError;
@@ -567,7 +520,6 @@ final class ForumFortressClient
                     try {
                         $result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
                         $this->recordEndpointResult($base, true, 0);
-                        $this->settings->set('forumfortress.preferred_endpoint', $base);
                         return $result;
                     } catch (\Throwable $retryError) {
                         $lastError = $retryError;
@@ -759,7 +711,7 @@ final class ForumFortressClient
 
     private function persistIdentity(array $result): void
     {
-        foreach (['api_key', 'site_id', 'preferred_endpoint'] as $key) {
+        foreach (['api_key', 'site_id'] as $key) {
             $value = trim((string) ($result[$key] ?? ''));
             if ($value !== '') {
                 $this->settings->set('forumfortress.'.$key, $value);
@@ -772,6 +724,12 @@ final class ForumFortressClient
 
         $state = $this->endpointState();
         $state['key_type'] = (string) ($result['key_type'] ?? $state['key_type'] ?? 'normal');
+        if ($state['key_type'] === 'offline_bootstrap' || str_starts_with((string) ($result['api_key'] ?? ''), 'ff_ob_')) {
+            $state['offline_preferred_endpoint'] = $this->normalizeBaseUrl((string) ($result['preferred_endpoint'] ?? ''));
+        } else {
+            unset($state['offline_preferred_endpoint']);
+            $this->settings->set('forumfortress.preferred_endpoint', $this->apiBaseUrl());
+        }
         if (isset($result['rebootstrap_after_seconds'])) {
             $state['rebootstrap_at'] = time() + max(60, (int) $result['rebootstrap_after_seconds']);
         } elseif (! str_starts_with((string) ($result['api_key'] ?? $this->apiKey()), 'ff_ob_')) {
@@ -787,41 +745,28 @@ final class ForumFortressClient
     private function checkCandidates(): array
     {
         $state = $this->endpointState();
-        $preferred = $this->normalizeBaseUrl((string) $this->settings->get('forumfortress.preferred_endpoint', ''));
         if ($this->apiRegion() !== 'global') {
             return array_values(array_filter([
                 $this->apiBaseUrl(),
                 $this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
             ]));
         }
-        if (str_starts_with($this->apiKey(), 'ff_ob_') && $preferred !== '') {
-            return [$preferred];
+        $offlinePreferred = $this->normalizeBaseUrl((string) ($state['offline_preferred_endpoint'] ?? ''));
+        if (str_starts_with($this->apiKey(), 'ff_ob_') && $offlinePreferred !== '') {
+            return [$offlinePreferred];
         }
 
         $meta = (array) ($state['endpoint_meta'] ?? []);
         $catalog = array_values((array) ($state['catalog'] ?? []));
-        $health = (array) ($state['health'] ?? []);
-        $now = time();
-        $edges = array_values(array_filter(array_map([$this, 'normalizeBaseUrl'], $catalog), static function (string $base) use ($meta, $health): bool {
+        $edges = array_values(array_filter(array_map([$this, 'normalizeBaseUrl'], $catalog), static function (string $base) use ($meta): bool {
             $role = strtolower((string) ($meta[$base]['role'] ?? ''));
             if (in_array($role, ['backup', 'control', 'control-fallback'], true)) return false;
-            return ($meta[$base]['check_ready'] ?? true) !== false && is_int($health[$base]['latency_ms'] ?? null);
+            return ($meta[$base]['check_ready'] ?? true) !== false;
         }));
-
-        usort($edges, static function (string $a, string $b) use ($health, $now): int {
-            $aFailed = $now - (int) ($health[$a]['last_failure_at'] ?? 0) < self::FAILED_ENDPOINT_COOLDOWN;
-            $bFailed = $now - (int) ($health[$b]['last_failure_at'] ?? 0) < self::FAILED_ENDPOINT_COOLDOWN;
-            if ($aFailed !== $bFailed) return $aFailed ? 1 : -1;
-            return (int) ($health[$a]['latency_ms'] ?? 999999) <=> (int) ($health[$b]['latency_ms'] ?? 999999);
-        });
-        $healthyEdges = $edges !== [];
-        $controlAllowed = ! empty($state['control_check_fallback']) || ! $healthyEdges;
-        $preferredFailed = $preferred !== ''
-            && $now - (int) ($health[$preferred]['last_failure_at'] ?? 0) < self::FAILED_ENDPOINT_COOLDOWN;
+        $controlAllowed = ! empty($state['control_check_fallback']) || $edges === [];
         return array_values(array_unique(array_filter(array_merge(
-            $preferred !== '' && ! $preferredFailed ? [$preferred] : [],
-            $edges,
             [$this->apiBaseUrl()],
+            $edges,
             $controlAllowed ? [$this->controlBaseUrl()] : []
         ))));
     }
@@ -865,13 +810,12 @@ final class ForumFortressClient
         $base = $this->normalizeBaseUrl($base);
         if ($base === '') return;
         $state = $this->endpointState();
-        $health = (array) ($state['health'] ?? []);
-        $health[$base][$success ? 'last_success_at' : 'last_failure_at'] = time();
         if ($success) {
-            unset($health[$base]['last_failure_at']);
-            if ($latencyMs > 0) $health[$base]['latency_ms'] = $latencyMs;
+            $state['last_responded'] = $base;
+            $state['last_response_at'] = time();
+        } else {
+            $state['last_failure'] = ['base' => $base, 'at' => time()];
         }
-        $state['health'] = $health;
         $this->saveEndpointState($state);
     }
 

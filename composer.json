@@ -8,7 +8,7 @@
         "moderation",
         "security"
     ],
-    "license": "proprietary",
+    "license": "GPL-2.0-or-later",
     "authors": [
         {
             "name": "Forum Fortress",

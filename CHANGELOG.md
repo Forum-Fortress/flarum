@@ -2,8 +2,18 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.3.7.2 - 2026-09-07
+
+- First release licensed as free and open-source software under
+  `GPL-2.0-or-later`.
+- Add the complete GPLv2 text, project notice and contribution terms, keeping
+  the separately governed Forum Fortress hosted service outside the package
+  licence.
+
 ## 1.3.7.1 - 2026-08-28
 
+- Remove client-side endpoint probing and latency selection. Normal requests
+  now start at GeoDNS and use catalog entries only as same-request fallbacks.
 - Certify compatibility with Flarum Core, Approval, Flags, and Suspend
   `2.0.0-rc.8` on PHP 8.4, including clean install, activation, migrations,
   live bootstrap, lost-response recovery, checks, removal, reinstall, and
