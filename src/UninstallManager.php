@@ -51,7 +51,6 @@ final class UninstallManager
                     'reason' => $reason,
                     'message' => $message,
                     'support' => ForumFortressClient::SUPPORT_URL,
-                    'exception' => $error,
                 ]
             );
             if ($throwOnFailure) {

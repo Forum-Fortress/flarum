@@ -29,16 +29,19 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.3.7.2';
+    public const PLUGIN_VERSION = '1.4.0';
+    private const GLOBAL_BASE_URL = 'https://api.ffapi.net';
     private const CONTROL_BASE_URL = 'https://fortress.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
-    private const CATALOG_TTL = 3600;
     private const CHECK_TOTAL_BUDGET_SECONDS = 5;
     private const CHECK_ENDPOINT_TIMEOUT_SECONDS = 1;
     private const BOOTSTRAP_TOTAL_BUDGET_SECONDS = 3;
     private const BOOTSTRAP_ENDPOINT_TIMEOUT_SECONDS = 1;
     private const BOOTSTRAP_RETRY_BACKOFF_SECONDS = 300;
     private const REPORT_TIMEOUT_SECONDS = 1;
+    private const STANDARD_HEARTBEAT_INTERVAL_SECONDS = 3600;
+    private const PRO_HEARTBEAT_INTERVAL_SECONDS = 600;
+    private const ENDPOINT_SUCCESS_WRITE_INTERVAL_SECONDS = 60;
 
     private HttpClient $http;
 
@@ -89,26 +92,18 @@ final class ForumFortressClient
         }
 
         try {
-            // Reports are best-effort telemetry. They must not turn a Flarum
-            // moderation action into a multi-endpoint bootstrap operation.
+            // Reports are best-effort telemetry and do not trigger bootstrap.
             if ($this->apiKey() === '') {
                 return;
             }
-            $base = (string) ($this->checkCandidates()[0] ?? '');
-            if ($base === '') {
-                return;
-            }
-            $this->request(
+            $this->requestAcrossCandidates(
                 'POST',
-                $base.'/v1/report/'.$reportType,
+                '/v1/report/'.$reportType,
                 array_merge($this->commonPayload(), $payload),
-                self::REPORT_TIMEOUT_SECONDS
+                self::REPORT_TIMEOUT_SECONDS,
+                $this->lookupCandidates()
             );
-            $this->recordEndpointResult($base, true, 0);
         } catch (\Throwable $error) {
-            if (isset($base) && $base !== '') {
-                $this->recordEndpointResult($base, false, 0);
-            }
             $this->logFailure('report/'.$reportType, $error);
         }
     }
@@ -145,13 +140,7 @@ final class ForumFortressClient
         $started = microtime(true);
         $state['last_bootstrap_attempt_at'] = time();
         $this->saveEndpointState($state);
-		$bases = $this->apiRegion() !== 'global'
-			? array_values(array_unique(array_filter([
-				$this->apiBaseUrl(),
-				$this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
-				$this->controlBaseUrl(),
-			])))
-			: array_values(array_unique(array_merge([$this->controlBaseUrl()], $this->bootstrapCandidates())));
+        $bases = $this->lookupCandidates();
         foreach ($bases as $base) {
             $remaining = self::BOOTSTRAP_TOTAL_BUDGET_SECONDS - (microtime(true) - $started);
             if ($remaining <= 0) {
@@ -166,23 +155,20 @@ final class ForumFortressClient
                     );
                 }
                 $this->persistIdentity($result);
-                $this->recordEndpointResult($base, true, 0);
+                $this->recordEndpointResult($base, true);
                 $successState = $this->endpointState();
                 unset($successState['last_bootstrap_failure_at']);
                 $this->saveEndpointState($successState);
                 return $result;
             } catch (\Throwable $error) {
-                // Prefer the configured control plane's error, especially an
-                // HTTP response, over a later fallback transport failure. This
-                // keeps the operator-facing diagnosis tied to the endpoint
-                // they configured instead of, for example, ending on a DNS
-                // error from the final catalogue candidate.
+                // Prefer a concrete HTTP response over a later fallback
+                // transport failure for a more useful operator diagnosis.
                 if ($reportedError === null
                     || ($error instanceof EndpointRequestException
                         && ! $reportedError instanceof EndpointRequestException)) {
                     $reportedError = $error;
                 }
-                $this->recordEndpointResult($base, false, 0);
+                $this->recordEndpointResult($base, false, '/v1/site/flarum/bootstrap', $error);
             }
         }
 
@@ -192,60 +178,9 @@ final class ForumFortressClient
         throw $reportedError ?: new \RuntimeException('No Forum Fortress bootstrap endpoint is available.');
     }
 
-    public function refreshEndpointCatalog(bool $force = false): array
-    {
-        $state = $this->endpointState();
-        if (! $force && time() - (int) ($state['catalog_fetched_at'] ?? 0) < self::CATALOG_TTL) {
-            return $state;
-        }
-
-        $catalog = null;
-        $fetchBases = array_values(array_unique(array_filter(array_merge(
-            [$this->controlBaseUrl(), $this->apiBaseUrl()],
-            (array) ($state['catalog'] ?? [])
-        ))));
-        foreach ($fetchBases as $base) {
-            try {
-                $catalog = $this->request('GET', $this->normalizeBaseUrl($base).'/v1/node-endpoints', [], 2);
-                break;
-            } catch (\Throwable $error) {
-                $this->logFailure('node-endpoints', $error);
-            }
-        }
-        if (is_array($catalog)) {
-            [$endpoints, $meta] = $this->extractEndpointCatalog($catalog);
-            if ($endpoints !== []) $state['catalog'] = $endpoints;
-            if ($meta !== []) $state['endpoint_meta'] = $meta;
-            $state['control_check_fallback'] = ! empty($catalog['control_check_fallback']);
-            $state['catalog_fetched_at'] = time();
-            unset($state['catalog_refresh_failed_at']);
-        } else {
-            $state['catalog_refresh_failed_at'] = time();
-        }
-        $this->saveEndpointState($state);
-
-        return $state;
-    }
-
-    public function refreshEndpointHealth(bool $force = false): array
-    {
-        $state = $this->refreshEndpointCatalog($force);
-        unset(
-            $state['health'],
-            $state['last_health_at'],
-            $state['best_latency_ms'],
-            $state['slow_health_mode'],
-            $state['preferred_candidate'],
-            $state['preferred_candidate_streak']
-        );
-        $this->settings->set('forumfortress.preferred_endpoint', $this->apiBaseUrl());
-        $this->saveEndpointState($state);
-        return $state;
-    }
-
     public function siteStatus(?int $timeoutOverride = null): array
     {
-        $status = $this->requestControlWithIdentityRecovery('GET', '/v1/site/status', fn (): array => [
+        $status = $this->requestWithIdentityRecovery('GET', '/v1/site/status', fn (): array => [
             'api_key' => $this->apiKey(),
             'domain' => $this->domain(),
         ], false, $timeoutOverride);
@@ -255,7 +190,7 @@ final class ForumFortressClient
 
     public function forumStats(): array
     {
-        return $this->requestControlWithIdentityRecovery('GET', '/v1/forum/stats', fn (): array => [
+        return $this->requestWithIdentityRecovery('GET', '/v1/forum/stats', fn (): array => [
             'api_key' => $this->apiKey(),
             'domain' => $this->domain(),
         ]);
@@ -263,47 +198,12 @@ final class ForumFortressClient
 
     public function capabilities(): array
     {
-        return $this->request('GET', $this->controlBaseUrl().'/v1/capabilities');
-    }
-
-    public function health(): array
-    {
-        return $this->request('GET', $this->controlBaseUrl().'/health');
-    }
-
-    /**
-     * Probe the selected live-check route without submitting forum content.
-     * This deliberately avoids the control plane so the admin can verify that
-     * regional protection remains reachable during a control-plane outage.
-     *
-     * @return array{endpoint: string, health: array, check_ready: array}
-     */
-    public function checkRouteHealth(): array
-    {
-        $lastError = null;
-
-        foreach ($this->checkCandidates() as $base) {
-            try {
-                $health = $this->request('GET', $base.'/health', [], self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                $this->recordEndpointResult($base, true, 0);
-                return [
-                    'endpoint' => $base,
-                    'health' => $health,
-                    // Kept as an alias for extensions consuming the old shape.
-                    'check_ready' => $health,
-                ];
-            } catch (\Throwable $error) {
-                $lastError = $error;
-                $this->recordEndpointResult($base, false, 0);
-            }
-        }
-
-        throw $lastError ?: new \RuntimeException('No selected Forum Fortress check endpoint is available.');
+        return $this->requestAcrossCandidates('GET', '/v1/capabilities', [], null, $this->lookupCandidates());
     }
 
     public function registerSite(string $email): array
     {
-        $result = $this->requestControlWithIdentityRecovery('POST', '/v1/site/register', fn (): array => array_merge($this->commonPayload(), [
+        $result = $this->requestWithIdentityRecovery('POST', '/v1/site/register', fn (): array => array_merge($this->commonPayload(), [
             'email' => trim($email),
         ]), true);
         $this->persistIdentity($result);
@@ -353,19 +253,27 @@ final class ForumFortressClient
         }
 
         try {
-            return $this->request('POST', $this->controlBaseUrl().'/v1/site/deprovision', array_merge(
-                $this->commonPayload(),
-                ['reason' => $reason]
-            ), 3);
+            return $this->requestAcrossCandidates(
+                'POST',
+                '/v1/site/deprovision',
+                array_merge($this->commonPayload(), ['reason' => $reason]),
+                3,
+                $this->controlActionCandidates(),
+                true
+            );
         } catch (EndpointRequestException $error) {
             if (strtolower((string) $error->errorCode) === 'stale_site') {
                 // Keep the still-valid key, recover the current site linkage,
                 // then retry so stale local metadata cannot strand an uninstall.
                 $this->recoverIdentityOrRestore($error);
-                return $this->request('POST', $this->controlBaseUrl().'/v1/site/deprovision', array_merge(
-                    $this->commonPayload(),
-                    ['reason' => $reason]
-                ), 3);
+                return $this->requestAcrossCandidates(
+                    'POST',
+                    '/v1/site/deprovision',
+                    array_merge($this->commonPayload(), ['reason' => $reason]),
+                    3,
+                    $this->controlActionCandidates(),
+                    true
+                );
             }
             if ($this->isAlreadyRemovedError($error)) {
                 return ['status' => 'already_removed'];
@@ -409,22 +317,45 @@ final class ForumFortressClient
         ]));
     }
 
-    public function sync(bool $forceBootstrap = false): array
+    public function sync(bool $force = false): array
     {
         if (! $this->isEnabled()) {
             return ['enabled' => false];
         }
 
-        $this->refreshEndpointCatalog();
-        $this->refreshEndpointHealth();
-        $ping = $this->confirmConnection(null, $forceBootstrap);
+        if (! $force) {
+            $this->bootstrapIfNeeded();
+        }
+        if (! $force && ! $this->heartbeatIsDue()) {
+            return [
+                'enabled' => true,
+                'heartbeat' => 'not_due',
+                'endpoint_state' => $this->endpointStateSummary(),
+            ];
+        }
 
-        return ['enabled' => true, 'ping' => $ping, 'endpoint_state' => $this->endpointStateSummary()];
+        // Record the attempt before network I/O so an unavailable service does
+        // not cause every scheduler tick to retry a standard-plan heartbeat.
+        $this->markHeartbeatAttempt();
+        $ping = $this->confirmConnection(null, $force);
+
+        return [
+            'enabled' => true,
+            'heartbeat' => 'sent',
+            'ping' => $ping,
+            'endpoint_state' => $this->endpointStateSummary(),
+        ];
     }
 
     public function confirmConnection(?int $timeoutOverride = null, bool $forceBootstrap = false): array
     {
-        $ping = $this->requestControlWithIdentityRecovery(
+        if ($this->apiKey() !== ''
+            && trim((string) $this->settings->get('forumfortress.site_id', '')) === '') {
+            // Recover installs interrupted between the API-key and site-ID
+            // setting writes before constructing the required ping payload.
+            $this->siteStatus($timeoutOverride);
+        }
+        $ping = $this->requestWithIdentityRecovery(
             'POST',
             '/v1/site/ping',
             fn (): array => $this->commonPayload(),
@@ -434,6 +365,7 @@ final class ForumFortressClient
         $this->persistIdentity($ping);
         $state = $this->endpointState();
         $state['last_site_ping_at'] = time();
+        unset($state['last_heartbeat_error']);
         $this->saveEndpointState($state);
 
         return $ping;
@@ -442,15 +374,19 @@ final class ForumFortressClient
     public function endpointStateSummary(): array
     {
         $state = $this->endpointState();
+        $endpoints = $this->lookupCandidates();
         return [
-            'preferred' => $this->apiBaseUrl(),
-            'catalog' => array_values((array) ($state['catalog'] ?? [])),
-            'catalog_fetched_at' => (int) ($state['catalog_fetched_at'] ?? 0),
-            'health' => [],
-            'last_health_at' => (int) ($state['catalog_fetched_at'] ?? 0),
+            'preferred' => (string) ($endpoints[0] ?? ''),
+            'endpoints' => $endpoints,
+            'endpoints_count' => count($endpoints),
+            'last_responded' => $this->normalizeBaseUrl((string) ($state['last_responded'] ?? '')),
+            'last_response_at' => (int) ($state['last_response_at'] ?? 0),
+            'last_failure' => is_array($state['last_failure'] ?? null) ? $state['last_failure'] : null,
             'key_type' => (string) ($state['key_type'] ?? 'normal'),
             'rebootstrap_at' => (int) ($state['rebootstrap_at'] ?? 0),
             'last_site_ping_at' => (int) ($state['last_site_ping_at'] ?? 0),
+            'heartbeat_last_attempt_at' => (int) ($state['heartbeat_last_attempt_at'] ?? 0),
+            'plan' => (string) ($state['plan_name'] ?? ''),
         ];
     }
 
@@ -491,39 +427,26 @@ final class ForumFortressClient
         $lastError = null;
         $started = microtime(true);
 
-        foreach ($this->checkCandidates() as $base) {
+        foreach ($this->lookupCandidates() as $base) {
             if ((microtime(true) - $started) >= self::CHECK_TOTAL_BUDGET_SECONDS) break;
             try {
-                $attemptStarted = microtime(true);
                 $result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                $this->recordEndpointResult($base, true, (int) ((microtime(true) - $attemptStarted) * 1000));
+                $this->recordEndpointResult($base, true);
                 return $result;
             } catch (\Throwable $error) {
                 $lastError = $error;
-                $this->recordEndpointResult($base, false, 0);
-
-				if ($this->apiRegion() !== 'global' && $base === $this->apiBaseUrl() && (! $error instanceof EndpointRequestException || $error->retryable)) {
-					try {
-						$result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-						$this->recordEndpointResult($base, true, 0);
-						return $result;
-					} catch (\Throwable $retryError) {
-						$lastError = $retryError;
-						$error = $retryError;
-						$this->recordEndpointResult($base, false, 0);
-					}
-				}
+                $this->recordEndpointResult($base, false, $path, $error);
 
                 if ($this->isStaleIdentityError($error)) {
                     $this->recoverIdentityOrRestore($error);
                     $payload = array_merge($payload, $this->commonPayload());
                     try {
                         $result = $this->request($method, $base.$path, $payload, self::CHECK_ENDPOINT_TIMEOUT_SECONDS);
-                        $this->recordEndpointResult($base, true, 0);
+                        $this->recordEndpointResult($base, true);
                         return $result;
                     } catch (\Throwable $retryError) {
                         $lastError = $retryError;
-                        $this->recordEndpointResult($base, false, 0);
+                        $this->recordEndpointResult($base, false, $path, $retryError);
                         $error = $retryError;
                     }
                 }
@@ -531,7 +454,7 @@ final class ForumFortressClient
             }
         }
 
-        throw $lastError ?: new \RuntimeException('No healthy Forum Fortress check endpoint is available.');
+        throw $lastError ?: new \RuntimeException('No Forum Fortress check endpoint is available.');
     }
 
     private function request(string $method, string $url, array $payload = [], ?int $timeoutOverride = null): array
@@ -564,6 +487,7 @@ final class ForumFortressClient
                 $errorCode = trim((string) ($detailValue['error'] ?? $detailValue['code'] ?? '')) ?: null;
             }
             $detail = is_array($detailValue) ? json_encode($detailValue) : trim((string) $detailValue);
+            $detail = $this->redactSensitiveText(is_string($detail) ? $detail : '');
             $retryable = ($status >= 200 && $status < 300)
                 || $status === 0
                 || in_array($status, [408, 425], true)
@@ -596,6 +520,45 @@ final class ForumFortressClient
         }
     }
 
+    private function requestWithIdentityRecovery(
+        string $method,
+        string $path,
+        callable $payload,
+        bool $forceBootstrap = false,
+        ?int $timeoutOverride = null
+    ): array {
+        try {
+            $this->bootstrapIfNeeded($forceBootstrap);
+        } catch (EndpointRequestException $error) {
+            if (! $this->isStaleIdentityError($error)) {
+                throw $error;
+            }
+            $this->recoverIdentityOrRestore($error);
+        }
+
+        try {
+            return $this->requestAcrossCandidates(
+                $method,
+                $path,
+                $payload(),
+                $timeoutOverride,
+                $this->lookupCandidates()
+            );
+        } catch (EndpointRequestException $error) {
+            if (! $this->isStaleIdentityError($error)) {
+                throw $error;
+            }
+            $this->recoverIdentityOrRestore($error);
+            return $this->requestAcrossCandidates(
+                $method,
+                $path,
+                $payload(),
+                $timeoutOverride,
+                $this->lookupCandidates()
+            );
+        }
+    }
+
     private function requestControlWithIdentityRecovery(
         string $method,
         string $path,
@@ -613,14 +576,59 @@ final class ForumFortressClient
             $this->recoverIdentityOrRestore($error);
         }
         try {
-            return $this->request($method, $this->controlBaseUrl().$path, $payload(), $timeoutOverride);
+            return $this->requestAcrossCandidates(
+                $method,
+                $path,
+                $payload(),
+                $timeoutOverride,
+                $this->controlActionCandidates(),
+                true
+            );
         } catch (EndpointRequestException $error) {
             if (! $this->isStaleIdentityError($error)) {
                 throw $error;
             }
             $this->recoverIdentityOrRestore($error);
-            return $this->request($method, $this->controlBaseUrl().$path, $payload(), $timeoutOverride);
+            return $this->requestAcrossCandidates(
+                $method,
+                $path,
+                $payload(),
+                $timeoutOverride,
+                $this->controlActionCandidates(),
+                true
+            );
         }
+    }
+
+    /**
+     * @param list<string> $bases
+     */
+    private function requestAcrossCandidates(
+        string $method,
+        string $path,
+        array $payload,
+        ?int $timeoutOverride,
+        array $bases,
+        bool $allowNotFoundFailover = false
+    ): array {
+        $lastError = null;
+        foreach ($bases as $base) {
+            try {
+                $result = $this->request($method, $base.$path, $payload, $timeoutOverride);
+                $this->recordEndpointResult($base, true);
+                return $result;
+            } catch (\Throwable $error) {
+                $lastError = $error;
+                $this->recordEndpointResult($base, false, $path, $error);
+                if ($error instanceof EndpointRequestException
+                    && ! $error->retryable
+                    && ! ($allowNotFoundFailover && $error->statusCode === 404)) {
+                    throw $error;
+                }
+            }
+        }
+
+        throw $lastError ?: new \RuntimeException('No Forum Fortress API endpoint is available.');
     }
 
     private function isStaleIdentityError(\Throwable $error): bool
@@ -714,107 +722,110 @@ final class ForumFortressClient
         foreach (['api_key', 'site_id'] as $key) {
             $value = trim((string) ($result[$key] ?? ''));
             if ($value !== '') {
-                $this->settings->set('forumfortress.'.$key, $value);
+                $this->setSettingIfChanged('forumfortress.'.$key, $value);
             }
         }
-        $this->settings->set('forumfortress.bootstrap_recovery_token', '');
-        $this->settings->set('forumfortress.last_bootstrap_error', '');
-        $this->settings->set('forumfortress.bootstrap_suppressed', '0');
-        $this->settings->set('forumfortress.enabled', '1');
+        $this->setSettingIfChanged('forumfortress.bootstrap_recovery_token', '');
+        $this->setSettingIfChanged('forumfortress.last_bootstrap_error', '');
+        $this->setSettingIfChanged('forumfortress.bootstrap_suppressed', '0');
+        $this->setSettingIfChanged('forumfortress.enabled', '1');
 
         $state = $this->endpointState();
         $state['key_type'] = (string) ($result['key_type'] ?? $state['key_type'] ?? 'normal');
-        if ($state['key_type'] === 'offline_bootstrap' || str_starts_with((string) ($result['api_key'] ?? ''), 'ff_ob_')) {
-            $state['offline_preferred_endpoint'] = $this->normalizeBaseUrl((string) ($result['preferred_endpoint'] ?? ''));
-        } else {
-            unset($state['offline_preferred_endpoint']);
-            $this->settings->set('forumfortress.preferred_endpoint', $this->apiBaseUrl());
-        }
+        unset(
+            $state['catalog'],
+            $state['catalog_fetched_at'],
+            $state['catalog_refresh_failed_at'],
+            $state['control_check_fallback'],
+            $state['endpoint_meta'],
+            $state['fallback_bootstrap_endpoints'],
+            $state['health'],
+            $state['last_health_at'],
+            $state['offline_preferred_endpoint']
+        );
+        $this->setSettingIfChanged('forumfortress.preferred_endpoint', (string) ($this->lookupCandidates()[0] ?? ''));
         if (isset($result['rebootstrap_after_seconds'])) {
             $state['rebootstrap_at'] = time() + max(60, (int) $result['rebootstrap_after_seconds']);
         } elseif (! str_starts_with((string) ($result['api_key'] ?? $this->apiKey()), 'ff_ob_')) {
             $state['rebootstrap_at'] = 0;
         }
-        $fallbacks = $result['fallback_bootstrap_endpoints'] ?? [];
-        if (is_array($fallbacks) && $fallbacks !== []) {
-            $state['fallback_bootstrap_endpoints'] = array_values(array_filter(array_map([$this, 'normalizeBaseUrl'], $fallbacks)));
+        if (! empty($result['plan'])) {
+            $state['plan_name'] = strtolower(trim((string) $result['plan']));
         }
         $this->saveEndpointState($state);
     }
 
-    private function checkCandidates(): array
+    /** @return list<string> */
+    private function lookupCandidates(): array
     {
-        $state = $this->endpointState();
-        if ($this->apiRegion() !== 'global') {
-            return array_values(array_filter([
-                $this->apiBaseUrl(),
-                $this->allowGlobalEmergencyFallback() ? 'https://api.ffapi.net' : null,
-            ]));
+        $primary = $this->apiBaseUrl();
+        if ($this->apiRegion() === 'global') {
+            return $this->uniqueBaseUrls([self::GLOBAL_BASE_URL, $this->controlBaseUrl()]);
         }
-        $offlinePreferred = $this->normalizeBaseUrl((string) ($state['offline_preferred_endpoint'] ?? ''));
-        if (str_starts_with($this->apiKey(), 'ff_ob_') && $offlinePreferred !== '') {
-            return [$offlinePreferred];
+        if (! $this->allowGlobalEmergencyFallback()) {
+            return [$primary];
         }
 
-        $meta = (array) ($state['endpoint_meta'] ?? []);
-        $catalog = array_values((array) ($state['catalog'] ?? []));
-        $edges = array_values(array_filter(array_map([$this, 'normalizeBaseUrl'], $catalog), static function (string $base) use ($meta): bool {
-            $role = strtolower((string) ($meta[$base]['role'] ?? ''));
-            if (in_array($role, ['backup', 'control', 'control-fallback'], true)) return false;
-            return ($meta[$base]['check_ready'] ?? true) !== false;
-        }));
-        $controlAllowed = ! empty($state['control_check_fallback']) || $edges === [];
-        return array_values(array_unique(array_filter(array_merge(
-            [$this->apiBaseUrl()],
-            $edges,
-            $controlAllowed ? [$this->controlBaseUrl()] : []
-        ))));
+        return $this->uniqueBaseUrls([$primary, self::GLOBAL_BASE_URL, $this->controlBaseUrl()]);
     }
 
-    private function bootstrapCandidates(): array
+    /** @return list<string> */
+    private function controlActionCandidates(): array
+    {
+        return $this->uniqueBaseUrls([$this->controlBaseUrl(), self::GLOBAL_BASE_URL]);
+    }
+
+    /** @param list<string> $bases
+     *  @return list<string>
+     */
+    private function uniqueBaseUrls(array $bases): array
+    {
+        return array_values(array_unique(array_filter(array_map([$this, 'normalizeBaseUrl'], $bases))));
+    }
+
+    private function heartbeatIsDue(): bool
     {
         $state = $this->endpointState();
-        return array_merge((array) ($state['fallback_bootstrap_endpoints'] ?? []), (array) ($state['catalog'] ?? []), [$this->apiBaseUrl()]);
+        $lastAttempt = (int) ($state['heartbeat_last_attempt_at'] ?? 0);
+        $plan = strtolower(trim((string) ($state['plan_name'] ?? '')));
+        $interval = in_array($plan, ['pro', 'multimod'], true)
+            ? self::PRO_HEARTBEAT_INTERVAL_SECONDS
+            : self::STANDARD_HEARTBEAT_INTERVAL_SECONDS;
+
+        return $lastAttempt <= 0 || time() - $lastAttempt >= $interval;
     }
 
-    private function extractEndpointCatalog(mixed $value): array
+    private function markHeartbeatAttempt(): void
     {
-        $urls = [];
-        $meta = [];
-        $walk = function (mixed $node, ?string $key = null) use (&$walk, &$urls, &$meta): void {
-            if (is_array($node)) {
-                $rawUrl = $node['url'] ?? $node['base_url'] ?? $node['endpoint'] ?? null;
-                if (is_string($rawUrl)) {
-                    $url = $this->normalizeBaseUrl($rawUrl);
-                    if ($url !== '') {
-                        $urls[] = $url;
-                        $meta[$url] = [
-                            'role' => strtolower((string) ($node['role'] ?? 'edge')),
-                            'node_id' => (string) ($node['node_id'] ?? ''),
-                            'check_ready' => (bool) ($node['check_ready'] ?? $node['check_capable'] ?? false),
-                        ];
-                    }
-                }
-                foreach ($node as $childKey => $child) $walk($child, (string) $childKey);
-            } elseif (is_string($node) && in_array($key, ['base_url', 'endpoint', 'url'], true)) {
-                $url = $this->normalizeBaseUrl($node);
-                if ($url !== '') $urls[] = $url;
-            }
-        };
-        $walk($value);
-        return [array_values(array_unique($urls)), $meta];
+        $state = $this->endpointState();
+        $state['heartbeat_last_attempt_at'] = time();
+        $this->saveEndpointState($state);
     }
 
-    private function recordEndpointResult(string $base, bool $success, int $latencyMs): void
+    private function recordEndpointResult(
+        string $base,
+        bool $success,
+        string $path = '',
+        ?\Throwable $error = null
+    ): void
     {
         $base = $this->normalizeBaseUrl($base);
         if ($base === '') return;
         $state = $this->endpointState();
         if ($success) {
+            if (($state['last_responded'] ?? '') === $base
+                && (int) ($state['last_response_at'] ?? 0) > time() - self::ENDPOINT_SUCCESS_WRITE_INTERVAL_SECONDS) {
+                return;
+            }
             $state['last_responded'] = $base;
             $state['last_response_at'] = time();
         } else {
-            $state['last_failure'] = ['base' => $base, 'at' => time()];
+            $state['last_failure'] = [
+                'base' => $base,
+                'path' => $path,
+                'at' => time(),
+                'message' => $error ? mb_substr($this->redactSensitiveText($error->getMessage()), 0, 200) : '',
+            ];
         }
         $this->saveEndpointState($state);
     }
@@ -827,7 +838,17 @@ final class ForumFortressClient
 
     private function saveEndpointState(array $state): void
     {
-        $this->settings->set('forumfortress.endpoint_state', json_encode($state, JSON_UNESCAPED_SLASHES));
+        $encoded = json_encode($state, JSON_UNESCAPED_SLASHES);
+        if (is_string($encoded)) {
+            $this->setSettingIfChanged('forumfortress.endpoint_state', $encoded);
+        }
+    }
+
+    private function setSettingIfChanged(string $key, string $value): void
+    {
+        if ((string) $this->settings->get($key, '') !== $value) {
+            $this->settings->set($key, $value);
+        }
     }
 
     private function normalizeBaseUrl(mixed $url): string
@@ -836,8 +857,18 @@ final class ForumFortressClient
         if (! filter_var($url, FILTER_VALIDATE_URL)) {
             return '';
         }
-        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-        return $scheme === 'https' ? $url : '';
+        $parts = parse_url($url);
+        if (! is_array($parts)
+            || strtolower((string) ($parts['scheme'] ?? '')) !== 'https'
+            || trim((string) ($parts['host'] ?? '')) === ''
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || isset($parts['query'])
+            || isset($parts['fragment'])) {
+            return '';
+        }
+
+        return $url;
     }
 
     private function apiKey(): string
@@ -900,10 +931,24 @@ final class ForumFortressClient
         if ($this->settings->get('forumfortress.debug_log', '0') === '1') {
             $this->logger->warning('Forum Fortress {operation} failed: {message}. Support: {support}', [
                 'operation' => $operation,
-                'message' => $error->getMessage(),
+                'message' => $this->redactSensitiveText($error->getMessage()),
                 'support' => self::SUPPORT_URL,
-                'exception' => $error,
             ]);
         }
+    }
+
+    private function redactSensitiveText(string $value): string
+    {
+        $apiKey = $this->apiKey();
+        if ($apiKey !== '') {
+            $value = str_replace([$apiKey, rawurlencode($apiKey)], '[redacted]', $value);
+        }
+        $value = (string) preg_replace(
+            '/([?&](?:api_key|token)=)[^&\s]+/i',
+            '$1[redacted]',
+            $value
+        );
+        $value = (string) preg_replace('/(Bearer\s+)[^\s,;]+/i', '$1[redacted]', $value);
+        return (string) preg_replace('/(X-FF-Key\s*[:=]\s*)[^\s,;]+/i', '$1[redacted]', $value);
     }
 }

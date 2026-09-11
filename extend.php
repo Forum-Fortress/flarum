@@ -75,9 +75,11 @@ return [
         ->command(SyncCommand::class)
         ->command(ModerationSyncCommand::class)
         ->schedule('forumfortress:sync', function (ScheduleEvent $event): void {
-            $event->hourly()->withoutOverlapping();
+            // Run often enough for Pro/MultiMod; the client gate limits every
+            // other plan to an hourly heartbeat.
+            $event->everyTenMinutes()->withoutOverlapping();
         })
         ->schedule('forumfortress:moderation-sync', function (ScheduleEvent $event): void {
-            $event->everyMinute()->withoutOverlapping();
+            $event->everyFiveMinutes()->withoutOverlapping();
         }),
 ];

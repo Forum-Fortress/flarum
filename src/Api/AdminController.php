@@ -41,7 +41,9 @@ final class AdminController implements RequestHandlerInterface
             return new JsonResponse(['data' => $data]);
         } catch (\Throwable $error) {
             return new JsonResponse([
-                'error' => $error->getMessage(),
+                'error' => $route === 'forumfortress.portal'
+                    ? 'Forum Fortress could not open the portal. Check the plugin connection and try again.'
+                    : $error->getMessage(),
                 'support_url' => ForumFortressClient::SUPPORT_URL,
             ], 502);
         }
@@ -81,46 +83,17 @@ final class AdminController implements RequestHandlerInterface
 
     private function connectionTest(): array
     {
-        $bootstrapError = null;
-        try {
-            $this->client->bootstrapIfNeeded(true);
-        } catch (\Throwable $error) {
-            // A regional node may remain able to protect a forum while the
-            // control-plane bootstrap path is temporarily unavailable.
-            $bootstrapError = $error->getMessage();
-        }
-
-        $checkRoute = null;
-        $checkRouteError = null;
-        try {
-            $checkRoute = $this->client->checkRouteHealth();
-        } catch (\Throwable $error) {
-            $checkRouteError = $error->getMessage();
-        }
-
-        $controlHealth = null;
-        $controlError = null;
-        try {
-            $controlHealth = $this->client->health();
-        } catch (\Throwable $error) {
-            $controlError = $error->getMessage();
-        }
-
-        if ($checkRoute === null && $controlHealth === null) {
-            throw new \RuntimeException($checkRouteError ?? $controlError ?? $bootstrapError ?? 'Connection test failed.');
-        }
+        // Test the authenticated route used by production traffic. GeoDNS owns
+        // endpoint health, so the plugin does not maintain a second catalogue
+        // or probe service /health endpoints.
+        $ping = $this->client->confirmConnection(2);
+        $endpoints = $this->client->endpointStateSummary();
 
         $result = [
-            'check_route' => $checkRoute,
-            'check_route_error' => $checkRouteError,
-            'control_health' => $controlHealth,
-            'control_error' => $controlError,
-            'bootstrap_error' => $bootstrapError,
-            // Retained for older admin bundles and integrations.
-            'health' => $controlHealth,
-            'capabilities' => $controlHealth === null ? null : $this->client->capabilities(),
-            'status' => $controlHealth === null ? [] : $this->client->siteStatus(),
-            'stats' => $controlHealth === null ? [] : $this->client->forumStats(),
+            'connection' => $ping,
+            'endpoint' => (string) ($endpoints['last_responded'] ?? $endpoints['preferred'] ?? ''),
+            'status' => $this->client->siteStatus(),
+            'stats' => $this->client->forumStats(),
         ];
 
         $this->cacheDashboardStatus([

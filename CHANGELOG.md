@@ -2,6 +2,22 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.0 - 2026-09-11
+
+- Replace plugin-managed endpoint catalogues and `/health` probes with
+  deterministic GeoDNS routing. Global requests use `api.ffapi.net` followed
+  by `fortress.ffapi.net`; regional requests remain locked unless global
+  fallback is enabled, in which case they use the regional endpoint, GeoDNS,
+  then Fortress.
+- Run the scheduler every ten minutes while limiting standard-plan heartbeats
+  to hourly and allowing Pro/MultiMod heartbeats every ten minutes.
+- Align moderation synchronization to a five-minute schedule.
+- Make connection tests verify the authenticated site-ping route instead of
+  treating unauthenticated health responses as proof of a working connection.
+- Redact credentials from request failures, avoid logging exception objects
+  that can retain authenticated headers, and reduce successful-request setting
+  write churn.
+
 ## 1.3.7.2 - 2026-09-07
 
 - First release licensed as free and open-source software under

@@ -22,7 +22,7 @@ final class SyncCommand extends AbstractCommand
                 'force',
                 null,
                 InputOption::VALUE_NONE,
-                'Retry bootstrap immediately instead of observing the automatic retry backoff.'
+                'Retry bootstrap and send a heartbeat immediately instead of observing automatic timing gates.'
             );
     }
 

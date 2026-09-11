@@ -63,7 +63,6 @@ final class BackgroundBootstrap implements MiddlewareInterface
             if ($this->settings->get('forumfortress.debug_log', '0') === '1') {
                 $this->logger->warning('Forum Fortress background bootstrap failed: {message}', [
                     'message' => $message,
-                    'exception' => $error,
                 ]);
             }
         }

@@ -2,8 +2,8 @@
   "private": true,
   "type": "module",
   "name": "@forumfortress/flarum",
-  "version": "1.3.7-2",
-  "forumFortressPluginVersion": "1.3.7.2",
+  "version": "1.4.0",
+  "forumFortressPluginVersion": "1.4.0",
   "devDependencies": {
     "@flarum/jest-config": "^2.0.2",
     "@flarum/prettier-config": "^1.0.0",

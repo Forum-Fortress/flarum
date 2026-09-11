@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Next release: `1.3.7.2`.
+Current release: `1.4.0`.
 
 ## Features
 
@@ -96,10 +96,18 @@ global emergency fallback is disabled by default. When enabled, the plugin
 retries the regional hostname first and may then use `api.ffapi.net`; processing
 may consequently occur outside the selected region. Endpoint URLs are not
 free-form administrator settings.
-Global mode relies on GeoDNS. The cached endpoint catalog is used only for
-same-request failover; the next request starts at GeoDNS again.
-The region lock applies to live spam checks; bootstrap, portal, and account
-management continue through the global control plane.
+Global mode uses `https://api.ffapi.net` and falls back to
+`https://fortress.ffapi.net` only when that request fails. Regional mode uses
+only its configured regional endpoint unless global emergency fallback is
+enabled; with fallback enabled, requests try the regional endpoint, then
+`api.ffapi.net`, then `fortress.ffapi.net`. The plugin relies on GeoDNS and
+does not fetch an endpoint catalogue or probe service health routes. Portal and
+attack-mode actions continue to prefer the global control plane.
+
+The scheduler checks every ten minutes. Heartbeats are limited to once per hour
+for standard plans and increase to every ten minutes for Pro/MultiMod forums;
+moderation synchronization runs every five minutes. These jobs require Flarum's
+scheduler to be configured and running.
 
 ## Documentation and support
 

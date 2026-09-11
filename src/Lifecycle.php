@@ -65,7 +65,6 @@ final class Lifecycle implements ExtenderInterface, LifecycleInterface
                 [
                     'message' => $message,
                     'support' => ForumFortressClient::SUPPORT_URL,
-                    'exception' => $error,
                 ]
             );
         }

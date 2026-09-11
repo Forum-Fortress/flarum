@@ -29,11 +29,8 @@ type ApiResult = DashboardStatus & {
   portal_url?: string;
   site?: SiteStatus;
   dashboard?: DashboardStatus;
-  check_route?: {
-    endpoint?: string;
-    health?: { node_id?: string };
-  } | null;
-  control_health?: unknown;
+  endpoint?: string;
+  connection?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
@@ -140,12 +137,8 @@ export default class ForumFortressControls extends Component {
   }
 
   private connectionTestMessage(result: ApiResult): string {
-    const endpoint = result.check_route?.endpoint ?? this.text("not_available");
-    const node = result.check_route?.health?.node_id;
-    const route = node ? `${endpoint} (${node})` : endpoint;
-    const control = result.control_health ? "available" : "unavailable";
-
-    return `${this.text("test_success")} Check route: ${route}. Control plane: ${control}.`;
+    const endpoint = result.endpoint ?? this.text("not_available");
+    return `${this.text("test_success")} API route: ${endpoint}.`;
   }
 
   private errorMessage(error: unknown): string {
