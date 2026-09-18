@@ -2,6 +2,10 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.1 - 2026-09-18
+
+- Route lifecycle and bootstrap requests through the resilient public API path.
+
 ## 1.4.0 - 2026-09-11
 
 - Replace plugin-managed endpoint catalogues and `/health` probes with

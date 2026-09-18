@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.4.0`.
+Current release: `1.4.1`.
 
 ## Features
 
@@ -16,7 +16,7 @@ Current release: `1.4.0`.
 
 ## Requirements
 
-- Flarum `1.8.x` (tested on `1.8.19`) or `2.x` (tested through
+- Flarum `1.8.x` (tested on `1.8.20`) or `2.x` (tested through
   `2.0.0-rc.8`).
 - PHP 8.0 or newer (Flarum 2 itself requires the newer PHP version supported by that release).
 - Outbound HTTPS access to Forum Fortress services.
@@ -47,7 +47,7 @@ and **Connection test** after enabling.
 From the Flarum root:
 
 ```bash
-composer require forumfortress/flarum:"^1.3"
+composer require forumfortress/flarum:"^1.4"
 php flarum extension:enable forumfortress-flarum
 php flarum cache:clear
 ```
@@ -67,7 +67,7 @@ so a response lost after the remote site is created cannot strand the install.
 ## Removal and reinstall
 
 Flarum's native **Purge** action automatically notifies Forum Fortress and
-removes the remote forum. Version 1.3 also listens for Extension Manager's
+removes the remote forum. The current release also listens for Extension Manager's
 post-Composer removal event while the extension is loaded. If the extension is
 already disabled, it cannot register that listener or display its maintenance
 panel. Re-enable it first, then open the Forum Fortress maintenance panel and
@@ -96,11 +96,10 @@ global emergency fallback is disabled by default. When enabled, the plugin
 retries the regional hostname first and may then use `api.ffapi.net`; processing
 may consequently occur outside the selected region. Endpoint URLs are not
 free-form administrator settings.
-Global mode uses `https://api.ffapi.net` and falls back to
-`https://fortress.ffapi.net` only when that request fails. Regional mode uses
-only its configured regional endpoint unless global emergency fallback is
-enabled; with fallback enabled, requests try the regional endpoint, then
-`api.ffapi.net`, then `fortress.ffapi.net`. The plugin relies on GeoDNS and
+Global mode uses `https://api.ffapi.net`. Regional mode uses only its
+configured regional endpoint unless global emergency fallback is enabled; with
+fallback enabled, requests try the regional endpoint, then `api.ffapi.net`.
+The plugin relies on GeoDNS and
 does not fetch an endpoint catalogue or probe service health routes. Portal and
 attack-mode actions continue to prefer the global control plane.
 
