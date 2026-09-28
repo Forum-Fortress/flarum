@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.4.1`.
+Current release: `1.4.2`.
 
 ## Features
 
@@ -38,10 +38,10 @@ outside the plugin's activity tracking.
 
 ## Install
 
-Or search in Extension Manager for Forum Fortress. In **Administration >
+Or search in Extension Manager for **Anti-Spam – Forum Fortress**. In **Administration >
 Extensions**, choose **Find more extensions** or **Install extension**, search
 for the official `forumfortress/flarum` package, select **Install**, then
-**Enable** it. Open the Forum Fortress administration page and run **Refresh**
+**Enable** it. Open the Anti-Spam – Forum Fortress administration page and run **Refresh**
 and **Connection test** after enabling.
 
 From the Flarum root:
@@ -60,7 +60,7 @@ updating their locked versions. Do not add Composer's `-W` or
 Enabling the extension immediately performs a short, best-effort bootstrap. A
 temporary network problem will not prevent Flarum from enabling the extension;
 the next protected request, status refresh, or scheduled synchronization retries
-automatically. Open **Administration > Extensions > Forum Fortress** to confirm
+automatically. Open **Administration > Extensions > Anti-Spam – Forum Fortress** to confirm
 the live status. Bootstrap retries use a short-lived, client-held recovery token,
 so a response lost after the remote site is created cannot strand the install.
 

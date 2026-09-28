@@ -2,6 +2,10 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.2 - 2026-09-25
+
+- Updated naming.
+
 ## 1.4.1 - 2026-09-18
 
 - Route lifecycle and bootstrap requests through the resilient public API path.

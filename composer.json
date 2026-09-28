@@ -42,7 +42,7 @@
             "dev-main": "1.x-dev"
         },
         "flarum-extension": {
-            "title": "Forum Fortress",
+            "title": "Anti-Spam – Forum Fortress",
             "category": "feature",
             "optional-dependencies": [
                 "flarum/approval",
