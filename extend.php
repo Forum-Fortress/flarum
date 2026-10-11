@@ -60,7 +60,9 @@ return [
     (new Extend\Event())
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckRegistration::class)
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckProfile::class)
-        ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class),
+        ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class)
+        ->listen(Flarum\Settings\Event\Deserializing::class, Listener\AdminSecretSettings::class)
+        ->listen(Flarum\Settings\Event\Saving::class, Listener\AdminSecretSettings::class),
 
     (new Extend\Routes('api'))
         ->get('/forumfortress/status', 'forumfortress.status', AdminController::class)

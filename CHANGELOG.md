@@ -2,6 +2,14 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.4 - 2026-10-11
+
+- Keep saved API keys out of serialized Flarum Admin settings, including the
+  initial bootstrap response in both Flarum 1.8 and 2.x.
+- Preserve existing keys when routine settings are saved with an empty field;
+  allow explicit replacement without revealing previous credentials.
+- Add native event and settings-repository regression tests for this protection.
+
 ## 1.4.3 - 2026-10-10
 
 - Update compatibility metadata for Flarum 2.0 stable while retaining Flarum
