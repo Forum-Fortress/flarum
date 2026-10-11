@@ -5,6 +5,7 @@
 use Flarum\Extend;
 use ForumFortress\Flarum\Api\AdminController;
 use ForumFortress\Flarum\Api\PortalController;
+use ForumFortress\Flarum\AssetMemory;
 use ForumFortress\Flarum\Console\ModerationSyncCommand;
 use ForumFortress\Flarum\Console\SyncCommand;
 use ForumFortress\Flarum\Lifecycle;
@@ -20,6 +21,7 @@ $adminJavaScript = str_starts_with(Flarum\Foundation\Application::VERSION, '1.')
 return [
     new Lifecycle(),
     new PackageRemovalLifecycle(),
+    new AssetMemory(),
 
     (new Extend\Frontend('admin'))
         ->js($adminJavaScript)

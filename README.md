@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.4.2`.
+Current release: `1.4.3`.
 
 ## Features
 
@@ -17,9 +17,15 @@ Current release: `1.4.2`.
 ## Requirements
 
 - Flarum `1.8.x` (tested on `1.8.20`) or `2.x` (tested through
-  `2.0.0-rc.8`).
+  `2.0.0`).
 - PHP 8.0 or newer (Flarum 2 itself requires the newer PHP version supported by that release).
 - Outbound HTTPS access to Forum Fortress services.
+
+Flarum's [server requirements](https://docs.flarum.org/install/#server-requirements)
+do not specify a PHP memory limit. Forum Fortress cache rebuilding is tested
+with a **128 MB PHP memory limit** on PHP 8.4 and Flarum 2.0.0 with its standard
+bundled extensions enabled. Additional extensions or custom styles can change
+memory use; PHP CLI and web limits may differ.
 
 Flarum Approval and Flags are optional. When both are enabled, Forum Fortress
 also synchronizes their moderation queue; their disabled state never blocks the

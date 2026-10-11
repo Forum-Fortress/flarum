@@ -2,6 +2,17 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.3 - 2026-10-10
+
+- Update compatibility metadata for Flarum 2.0 stable while retaining Flarum
+  1.8 and Flarum 2 RC5-or-newer support.
+- Include static dashboard styles as inline CSS to reduce LESS compilation
+  memory during asset and cache rebuilding.
+- Reclaim completed Flarum 2 compiler object graphs between stylesheet builds
+  so the bundled-extension cache rebuild fits a 128 MB PHP memory limit.
+- Refresh frontend test dependencies to pass the current security audit while
+  preserving the distributed production bundles.
+
 ## 1.4.2 - 2026-09-25
 
 - Updated naming.
