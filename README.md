@@ -2,7 +2,7 @@
 
 Forum Fortress adds cloud-based spam and abuse protection to Flarum 1.8.x and 2.x. It checks supported forum activity with the Forum Fortress service and returns a simple `ALLOW` or `BLOCK` decision before Flarum completes the action.
 
-Current release: `1.4.4`.
+Current release: `1.4.5`.
 
 ## Features
 
@@ -13,6 +13,30 @@ Current release: `1.4.4`.
 - Native Flarum Approval and moderation synchronization.
 - Attack mode, connection test, usage status, portal access, and manual sync controls in Flarum Admin.
 - Scheduled heartbeat and moderation synchronization through Flarum's scheduler.
+
+## Optional repeat-spammer suspension
+
+**Suspend repeat spammers for seven days** in the native extension settings
+is **Off** by default, including upgrades from 1.4.4. Install and enable the
+compatible **Flarum Suspend** extension to make this control available.
+
+When enabled, two distinct confirmed BLOCKs with original scores strictly above
+80 within 24 hours can suspend a confirmed member who joined within seven days
+and has at most ten comments. Administrators, moderators, custom groups, guests,
+system accounts, existing suspensions and established members are protected.
+Registration, outages, policy-only blocks and legacy responses cannot count.
+The server must explicitly certify each response as eligible for escalation.
+
+The Flarum scheduler must run every minute; the separate
+`forumfortress:repeat-offenders` command processes durable local work. It also
+rechecks settings, permissions and evidence before using the native Suspend API.
+No extra remote API request is made on submission. Duplicate bodies and stable
+decision references count once; replay receipts are retained for seven days.
+Reverse a suspension through the normal Flarum Suspend controls. Automatic
+suspension applies at most once per member, so a moderator's reversal is retained.
+Disabling this setting or Suspend prevents pending actions. Purging Forum
+Fortress removes its evidence tables and leaves native suspensions intact.
+Spam-clean and account deletion are separate actions and are not enabled here.
 
 ## Requirements
 

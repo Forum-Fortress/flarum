@@ -29,7 +29,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.4.4';
+    public const PLUGIN_VERSION = '1.4.5';
     private const GLOBAL_BASE_URL = 'https://api.ffapi.net';
     private const CONTROL_BASE_URL = 'https://api.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';

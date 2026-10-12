@@ -7,6 +7,7 @@ use ForumFortress\Flarum\Api\AdminController;
 use ForumFortress\Flarum\Api\PortalController;
 use ForumFortress\Flarum\AssetMemory;
 use ForumFortress\Flarum\Console\ModerationSyncCommand;
+use ForumFortress\Flarum\Console\RepeatOffenderCommand;
 use ForumFortress\Flarum\Console\SyncCommand;
 use ForumFortress\Flarum\Lifecycle;
 use ForumFortress\Flarum\Listener;
@@ -22,6 +23,8 @@ return [
     new Lifecycle(),
     new PackageRemovalLifecycle(),
     new AssetMemory(),
+    (new Extend\ServiceProvider())->register(ForumFortress\Flarum\Moderation\RepeatOffenderProvider::class),
+    (new Extend\Middleware('api'))->add(ForumFortress\Flarum\Middleware\RepeatOffenderEvidence::class),
 
     (new Extend\Frontend('admin'))
         ->js($adminJavaScript)
@@ -52,7 +55,8 @@ return [
         ->default('forumfortress.block_reject_action', 'reject')
         ->default('forumfortress.timeout', '5')
         ->default('forumfortress.fail_open', '1')
-        ->default('forumfortress.debug_log', '0'),
+        ->default('forumfortress.debug_log', '0')
+        ->default('forumfortress.repeat_offender_suspend', '0'),
 
     (new Extend\Middleware('forum'))
         ->add(BackgroundBootstrap::class),
@@ -62,7 +66,9 @@ return [
         ->listen(Flarum\User\Event\Saving::class, Listener\CheckProfile::class)
         ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class)
         ->listen(Flarum\Settings\Event\Deserializing::class, Listener\AdminSecretSettings::class)
-        ->listen(Flarum\Settings\Event\Saving::class, Listener\AdminSecretSettings::class),
+        ->listen(Flarum\Settings\Event\Saving::class, Listener\AdminSecretSettings::class)
+        ->listen(Flarum\Settings\Event\Deserializing::class, Listener\RepeatOffenderAvailability::class)
+        ->listen(Flarum\Settings\Event\Saving::class, Listener\RepeatOffenderAvailability::class),
 
     (new Extend\Routes('api'))
         ->get('/forumfortress/status', 'forumfortress.status', AdminController::class)
@@ -78,6 +84,10 @@ return [
     (new Extend\Console())
         ->command(SyncCommand::class)
         ->command(ModerationSyncCommand::class)
+        ->command(RepeatOffenderCommand::class)
+        ->schedule('forumfortress:repeat-offenders', function (ScheduleEvent $event): void {
+            $event->everyMinute()->withoutOverlapping();
+        })
         ->schedule('forumfortress:sync', function (ScheduleEvent $event): void {
             // Run often enough for Pro/MultiMod; the client gate limits every
             // other plan to an hourly heartbeat.

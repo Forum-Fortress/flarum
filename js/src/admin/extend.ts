@@ -38,6 +38,17 @@ app.initializers.add(extensionId, () => {
     type: "boolean",
   });
   registrar.registerSetting({
+    setting: "forumfortress.repeat_offender_suspend",
+    label: app.translator.trans("forumfortress-flarum.admin.settings.repeat_offender_label"),
+    help: app.translator.trans(
+      app.data.settings["forumfortress.repeat_offender_available"] === "1"
+        ? "forumfortress-flarum.admin.settings.repeat_offender_help"
+        : "forumfortress-flarum.admin.settings.repeat_offender_unavailable"
+    ),
+    type: "boolean",
+    disabled: app.data.settings["forumfortress.repeat_offender_available"] !== "1",
+  });
+  registrar.registerSetting({
     setting: "forumfortress.api_region",
     label: app.translator.trans("forumfortress-flarum.admin.settings.api_region_label"),
     help: app.translator.trans("forumfortress-flarum.admin.settings.api_region_help"),

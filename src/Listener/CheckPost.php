@@ -6,10 +6,11 @@ use Flarum\Post\CommentPost;
 use Flarum\Post\Event\Saving;
 use ForumFortress\Flarum\Api\ForumFortressClient;
 use ForumFortress\Flarum\Api\UnavailableException;
+use ForumFortress\Flarum\Moderation\RepeatOffender;
 
 final class CheckPost
 {
-    public function __construct(private ForumFortressClient $client)
+    public function __construct(private ForumFortressClient $client, private RepeatOffender $enforcement)
     {
     }
 
@@ -38,6 +39,7 @@ final class CheckPost
                 'thread_id' => $event->post->discussion_id ? (string) $event->post->discussion_id : null,
                 'action' => $event->post->exists ? 'edit' : 'create',
             ]));
+            $this->enforcement->record((int) $event->post->user_id, (int) $event->actor->id, $response, $body, $event->post);
             Decision::assertAllowed($response);
         } catch (UnavailableException $error) {
             throw Decision::unavailable($error);

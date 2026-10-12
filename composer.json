@@ -30,7 +30,7 @@
     "suggest": {
         "flarum/approval": "Enables Forum Fortress moderation queue synchronization.",
         "flarum/flags": "Enables Forum Fortress moderation queue synchronization.",
-        "flarum/suspend": "Enables spam-clean actions to suspend abusive accounts."
+        "flarum/suspend": "Enables optional seven-day repeat-spammer suspensions and native reversal."
     },
     "autoload": {
         "psr-4": {

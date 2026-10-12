@@ -2,6 +2,17 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.5 - 2026-10-12
+
+- Add an optional native seven-day suspension after two distinct certified spam
+  blocks within 24 hours. The setting defaults Off on fresh install and upgrade.
+- Persist atomic local evidence and replay receipts; run account actions only in
+  a separate scheduled command with current settings, ownership and staff checks.
+- Use Flarum Suspend's native API, expiry and reversal. Require the optional
+  Suspend extension; preserve credentials, routing, fail-open and content checks.
+- Protect guests, system/staff/custom-group accounts and established members;
+  apply at most one automatic suspension per member, preserving moderator reversal.
+
 ## 1.4.4 - 2026-10-11
 
 - Keep saved API keys out of serialized Flarum Admin settings, including the
