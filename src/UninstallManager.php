@@ -30,6 +30,11 @@ final class UninstallManager
                 // between an intentional disconnect and Composer removal.
                 $this->settings->set('forumfortress.bootstrap_suppressed', '1');
                 $this->settings->set('forumfortress.enabled', '0');
+            } elseif ($reason === 'plugin_uninstall') {
+                // A confirmed package removal must not leave extension settings
+                // behind. Failed deprovisioning still keeps the identity and
+                // retry state in the catch block below.
+                $this->purgeSettings();
             }
             $this->logger->info('Forum Fortress site deprovisioned during {reason}: {status}', [
                 'reason' => $reason,
@@ -105,5 +110,15 @@ final class UninstallManager
         $this->settings->set('forumfortress.last_deprovision_error', '');
         $this->settings->set('forumfortress.last_deprovision_reason', '');
         $this->settings->set('forumfortress.last_deprovision_at', '0');
+    }
+
+    private function purgeSettings(): void
+    {
+        foreach ($this->settings->all() as $key => $_value) {
+            $key = (string) $key;
+            if (str_starts_with($key, 'forumfortress.')) {
+                $this->settings->delete($key);
+            }
+        }
     }
 }

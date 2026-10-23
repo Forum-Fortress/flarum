@@ -2,6 +2,13 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.6 - 2026-10-23
+
+- Remove Forum Fortress settings after a confirmed extension uninstall while
+  preserving unrelated settings, users, discussions and native suspensions.
+- Update the Extension Manager name and package description for forum admins.
+- Verify installation, ALLOW/BLOCK decisions and clean removal on Flarum 2.0.2.
+
 ## 1.4.5 - 2026-10-12
 
 - Add an optional native seven-day suspension after two distinct certified spam
