@@ -18,7 +18,7 @@ No API keys or complicated rules. Enable the extension and it connects automatic
 - **Regional routing, failover and configurable controls** built in.
 - **Native Flarum moderation** tools.
 
-Supports **Flarum 1.8.x and 2.x** (tested through **1.8.20** and **2.0.2**).
+Supports **Flarum 1.8.x and 2.x** (tested on **1.8.22** and **2.0.2**).
 
 ## Installation
 

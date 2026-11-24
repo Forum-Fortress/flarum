@@ -29,7 +29,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.4.6';
+    public const PLUGIN_VERSION = '1.4.7';
     private const GLOBAL_BASE_URL = 'https://api.ffapi.net';
     private const CONTROL_BASE_URL = 'https://api.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
@@ -67,6 +67,9 @@ final class ForumFortressClient
 
         try {
             $this->bootstrapIfNeeded();
+            if ($eventType === 'register' && empty($payload['check_request_id'])) {
+                $payload['check_request_id'] = bin2hex(random_bytes(16));
+            }
             $result = $this->requestChecks('POST', '/v1/check/'.$eventType, array_merge($this->commonPayload(), $payload));
             $decision = strtolower(trim((string) ($result['decision'] ?? '')));
             if (! in_array($decision, ['allow', 'review', 'block'], true)) {

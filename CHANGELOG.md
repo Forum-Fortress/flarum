@@ -2,6 +2,11 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.7 - Unreleased
+
+- Update the JavaScript build dependencies, including the fast-uri security fix, and rebuild the Flarum 1.x and 2.x admin bundles.
+- Verify extension installation and lifecycle on Flarum 1.8.22 and 2.0.2.
+
 ## 1.4.6 - 2026-10-23
 
 - Remove Forum Fortress settings after a confirmed extension uninstall while
