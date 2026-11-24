@@ -6,6 +6,7 @@ use Flarum\Foundation\Application;
 use Flarum\Foundation\Config;
 use Flarum\Settings\SettingsRepositoryInterface;
 use Flarum\User\User;
+use ForumFortress\Flarum\ClientIp;
 use GuzzleHttp\Client as HttpClient;
 use Psr\Log\LoggerInterface;
 
@@ -29,7 +30,7 @@ final class EndpointRequestException extends \RuntimeException
 
 final class ForumFortressClient
 {
-    public const PLUGIN_VERSION = '1.4.7';
+    public const PLUGIN_VERSION = '1.4.9';
     private const GLOBAL_BASE_URL = 'https://api.ffapi.net';
     private const CONTROL_BASE_URL = 'https://api.ffapi.net';
     public const SUPPORT_URL = 'https://forumfortress.com/#contact';
@@ -401,7 +402,11 @@ final class ForumFortressClient
             'email' => (string) $user->email,
             'account_age_seconds' => $joinedAt ? max(0, time() - $joinedAt->getTimestamp()) : 0,
             'post_count' => (int) $user->comment_count,
-            'ip' => (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+            'ip' => ClientIp::resolve(
+                $_SERVER,
+                (string) $this->settings->get('forumfortress.trusted_proxies', ''),
+                (string) $this->settings->get('forumfortress.forwarded_ip_header', ClientIp::DEFAULT_HEADER)
+            ),
             'user_agent' => substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500),
         ], $extra);
     }

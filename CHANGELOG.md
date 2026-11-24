@@ -2,6 +2,12 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.9 - 2026-11-24
+
+- Resolve visitor IP addresses for checks using a configured header from trusted reverse proxies.
+- Suggest the current proxy in Flarum Admin for quick setup.
+- Automatically try supported forwarding headers when the web server reports a local or reserved peer and the proxy settings are left at their defaults.
+
 ## 1.4.7 - Unreleased
 
 - Update the JavaScript build dependencies, including the fast-uri security fix, and rebuild the Flarum 1.x and 2.x admin bundles.

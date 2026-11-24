@@ -1,8 +1,11 @@
 import app from "flarum/admin/app";
+import type Mithril from "mithril";
 import ForumFortressPage from "./components/ForumFortressPage";
 
 type SettingsRegistrar = {
-  registerSetting(setting: Record<string, unknown>): unknown;
+  registerSetting(
+    setting: Record<string, unknown> | ((this: ForumFortressPage) => Mithril.Children)
+  ): unknown;
   registerPage(page: typeof ForumFortressPage): unknown;
 };
 
@@ -126,6 +129,66 @@ app.initializers.add(extensionId, () => {
       "forumfortress-flarum.admin.settings.debug_log_label"
     ),
     type: "boolean",
+  });
+  registrar.registerSetting(() =>
+    m("h3", app.translator.trans(
+      "forumfortress-flarum.admin.settings.advanced_proxy_settings"
+    ))
+  );
+  registrar.registerSetting(function (this: ForumFortressPage) {
+    const address = app.data.settings["forumfortress.proxy_address_hint"];
+    const header = app.data.settings["forumfortress.proxy_header_hint"];
+    const trustedProxies = this.setting("forumfortress.trusted_proxies");
+    const addresses = (trustedProxies() || "").split(",").map((value) => value.trim()).filter(Boolean);
+
+    if (!address || !header || addresses.includes(address)) {
+      return null;
+    }
+
+    return m(".Form-group", [
+      m("p", app.translator.trans(
+        "forumfortress-flarum.admin.settings.proxy_hint",
+        { address, header }
+      )),
+      m("button.Button", {
+        type: "button",
+        onclick: () => {
+          trustedProxies([...addresses, address].join(", "));
+          if (addresses.length === 0) {
+            this.setting("forumfortress.forwarded_ip_header")(header);
+          }
+        },
+      }, app.translator.trans(
+        "forumfortress-flarum.admin.settings.add_detected_proxy"
+      )),
+    ]);
+  });
+  registrar.registerSetting({
+    setting: "forumfortress.trusted_proxies",
+    label: app.translator.trans(
+      "forumfortress-flarum.admin.settings.trusted_proxies_label"
+    ),
+    help: app.translator.trans(
+      "forumfortress-flarum.admin.settings.trusted_proxies_help"
+    ),
+    type: "text",
+  });
+  registrar.registerSetting({
+    setting: "forumfortress.forwarded_ip_header",
+    label: app.translator.trans(
+      "forumfortress-flarum.admin.settings.forwarded_ip_header_label"
+    ),
+    help: app.translator.trans(
+      "forumfortress-flarum.admin.settings.forwarded_ip_header_help"
+    ),
+    type: "select",
+    options: {
+      "X-Forwarded-For": "X-Forwarded-For",
+      Forwarded: "Forwarded",
+      "X-Real-IP": "X-Real-IP",
+      "CF-Connecting-IP": "CF-Connecting-IP",
+      "True-Client-IP": "True-Client-IP",
+    },
   });
   registrar.registerPage(ForumFortressPage);
 });

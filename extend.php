@@ -6,6 +6,7 @@ use Flarum\Extend;
 use ForumFortress\Flarum\Api\AdminController;
 use ForumFortress\Flarum\Api\PortalController;
 use ForumFortress\Flarum\AssetMemory;
+use ForumFortress\Flarum\ClientIp;
 use ForumFortress\Flarum\Console\ModerationSyncCommand;
 use ForumFortress\Flarum\Console\RepeatOffenderCommand;
 use ForumFortress\Flarum\Console\SyncCommand;
@@ -55,6 +56,8 @@ return [
         ->default('forumfortress.block_reject_action', 'reject')
         ->default('forumfortress.timeout', '5')
         ->default('forumfortress.fail_open', '1')
+        ->default('forumfortress.trusted_proxies', '')
+        ->default('forumfortress.forwarded_ip_header', ClientIp::DEFAULT_HEADER)
         ->default('forumfortress.debug_log', '0')
         ->default('forumfortress.repeat_offender_suspend', '0'),
 
@@ -67,6 +70,8 @@ return [
         ->listen(Flarum\Post\Event\Saving::class, Listener\CheckPost::class)
         ->listen(Flarum\Settings\Event\Deserializing::class, Listener\AdminSecretSettings::class)
         ->listen(Flarum\Settings\Event\Saving::class, Listener\AdminSecretSettings::class)
+        ->listen(Flarum\Settings\Event\Deserializing::class, Listener\ProxySettings::class)
+        ->listen(Flarum\Settings\Event\Saving::class, Listener\ProxySettings::class)
         ->listen(Flarum\Settings\Event\Deserializing::class, Listener\RepeatOffenderAvailability::class)
         ->listen(Flarum\Settings\Event\Saving::class, Listener\RepeatOffenderAvailability::class),
 

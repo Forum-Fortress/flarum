@@ -26,6 +26,15 @@ Find **Forum Fortress - Spam Blocker** in Flarum's Extension Manager, or install
 
 `composer require forumfortress/flarum:"^1.4"`
 
+## Reverse proxies
+
+With default settings, Forum Fortress uses the PHP connection address. For a
+local or reserved address, it tries `X-Forwarded-For`, `Forwarded`,
+`X-Real-IP`, `CF-Connecting-IP` and `True-Client-IP` in order and uses the
+first usable client IP. If no header is usable, it keeps the PHP address.
+See [reverse proxy settings](https://forumfortress.com/docs/install/flarum/#forums-behind-a-reverse-proxy)
+for instructions on configuring trusted proxies.
+
 ## Need more information?
 
 Installation, configuration, requirements, optional features and troubleshooting are in our documentation.
