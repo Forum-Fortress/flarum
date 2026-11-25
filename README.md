@@ -1,16 +1,10 @@
-# Forum Fortress for Flarum
+# Forum Fortress anti-spam extension for Flarum
 
-**Make spam on your forum history with one simple extension.**
+Forum Fortress helps Flarum admins catch spam registrations, discussions and
+replies. Enable the extension to connect to the hosted Forum Fortress service.
+New forums connect automatically without a key to paste.
 
-Your forum is for people, not spambots.
-
-Forum Fortress tackles spam registrations, advertising and suspicious activity, giving you more time to run your community.
-
-**Install it. Enable it. Let it get to work.**
-
-No API keys or complicated rules. Enable the extension and it connects automatically.
-
-## What do you get?
+## What it checks
 
 - **Automatic spam protection** for registrations, discussions, replies, edits and supported profile changes.
 - **Intelligent blocking** backed by the Forum Fortress anti-spam service.
@@ -26,6 +20,10 @@ Find **Forum Fortress - Spam Blocker** in Flarum's Extension Manager, or install
 
 `composer require forumfortress/flarum:"^1.4"`
 
+Enable the extension in Flarum Admin. The [Flarum installation guide](https://forumfortress.com/docs/install/flarum/)
+covers compatibility, configuration and troubleshooting. The [Flarum extension page](https://forumfortress.com/platforms/flarum/)
+shows the current release and download options.
+
 ## Reverse proxies
 
 With default settings, Forum Fortress uses the PHP connection address. For a
@@ -35,17 +33,11 @@ first usable client IP. If no header is usable, it keeps the PHP address.
 See [reverse proxy settings](https://forumfortress.com/docs/install/flarum/#forums-behind-a-reverse-proxy)
 for instructions on configuring trusted proxies.
 
-## Need more information?
+## Help
 
-Installation, configuration, requirements, optional features and troubleshooting are in our documentation.
-
-- [Installation and configuration](https://forumfortress.com/docs/install/flarum/)
-- [Full documentation](https://forumfortress.com/docs/)
-- [Support](https://forumfortress.com/#support)
+- [Contact Forum Fortress](https://forumfortress.com/support/#contact)
 - [Service status](https://status.forumfortress.com/)
 
 ## Open source
 
 The extension is free and open source under **GPL-2.0-or-later**; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The hosted Forum Fortress service is separate and governed by its service terms. Contributions use the same licence; contributors retain their copyright, with no CLA or assignment required.
-
-**Less spam. Less cleaning up. More time for your community.**

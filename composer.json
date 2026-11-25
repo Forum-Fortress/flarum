@@ -1,6 +1,6 @@
 {
     "name": "forumfortress/flarum",
-    "description": "Make spam on your forum history with one simple extension.",
+    "description": "Anti-spam extension for Flarum 1.8 and 2 that helps catch spam registrations, discussions and replies.",
     "type": "flarum-extension",
     "keywords": [
         "flarum",
@@ -15,10 +15,10 @@
             "homepage": "https://forumfortress.com/"
         }
     ],
-    "homepage": "https://forumfortress.com/",
+    "homepage": "https://forumfortress.com/platforms/flarum/",
     "support": {
         "docs": "https://forumfortress.com/docs/install/flarum/",
-        "forum": "https://forumfortress.com/#support",
+        "forum": "https://forumfortress.com/support/#contact",
         "issues": "https://github.com/Forum-Fortress/flarum/issues",
         "source": "https://github.com/Forum-Fortress/flarum"
     },

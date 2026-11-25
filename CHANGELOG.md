@@ -2,6 +2,10 @@
 
 All notable changes to Forum Fortress for Flarum are documented here.
 
+## 1.4.10 - 2026-11-25
+
+- Clarify the public package description and link directly to the platform, installation guide and support pages.
+
 ## 1.4.9 - 2026-11-24
 
 - Resolve visitor IP addresses for checks using a configured header from trusted reverse proxies.
